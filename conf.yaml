@@ -3,7 +3,7 @@ serverIP: 127.0.0.1
 timeout: 5
 retry: 5
 maxTime: 6000
-logdir: "./logs"
+logdir: "/tmp"
 maxLogDays: 15
 sqlUser: "root"
 sqlPass: "password"

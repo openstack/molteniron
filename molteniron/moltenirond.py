@@ -1041,14 +1041,27 @@ def log(conf, message):
     logdir = conf["logdir"]
     now = datetime.today()
 
-    fname = str(now.day) + "-" + str(now.month) \
-        + "-" + str(now.year) + ".log"
+    fname = ( "molteniron-"
+            + str(now.day)
+            + "-"
+            + str(now.month)
+            + "-"
+            + str(now.year)
+            + ".log"
+            )
 
-    timestamp = "{0:0>2}".format(str(now.hour)) + ":" + \
-        "{0:0>2}".format(str(now.minute)) \
-        + ":" + "{0:0>2}".format(str(now.second))
+    timestamp = ( "{0:0>2}".format(str(now.hour))
+                + ":"
+                + "{0:0>2}".format(str(now.minute))
+                + ":"
+                + "{0:0>2}".format(str(now.second))
+                )
 
-    message = timestamp + "  " + message + "\n"
+    message = ( timestamp 
+              + "  "
+              + message
+              + "\n"
+              )
 
     # check if logdir exists, if not create it
     if not os.path.isdir(logdir):
@@ -1068,6 +1081,8 @@ def cleanLogs(conf):
     now = datetime.today()
     logs = os.popen("ls " + logdir).read().split("\n")
     for log in logs:
+        if not log.startswith("molteniron-"):
+            continue
         elements = log[:-1 * len(".log")].split("-")
         if len(elements) != 3:
             continue
