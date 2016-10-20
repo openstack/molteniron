@@ -25,47 +25,49 @@ import argparse
 
 DEBUG = False
 
-def split_commandline_args(argv):
-    front = []
-    back = []
-    command_found = False
 
-    for elm in argv:
-        if command_found:
-            back.append(elm)
-        else:
-            front.append(elm)
+# Create a decorator pattern that maintains a registry
+def makeRegistrar():
+    registry = {}
+    def registrar(func):
+        registry[func.__name__] = func
+        # normally a decorator returns a wrapped function,
+        # but here we return func unmodified, after registering it
+        return func
+    registrar.all = registry
+    return registrar
 
-        if elm[0] != '-':
-            command_found = True
-
-    return (front, back)
+# Create the decorator
+command = makeRegistrar()
 
 
 class MoltenIron(object):
 
-    def __init__(self, conf, argv):
-        self.conf = conf
-
-        (argv, rest_argv) = split_commandline_args(argv)
-
-        # Parse the arguments and generate a request
-        parser = argparse.ArgumentParser()
-        parser.add_argument('command', help='Subcommand to run')
-
-        (self.args, self.unknown_args) = parser.parse_known_args (argv)
-        self.unknown_args += rest_argv
-
+    def __init__(self):
+        self.conf = None
+        self.argv = None
+        self.parser = None
         self.request = None
         self.response_str = None
         self.response_json = None
+
+    def setup_conf(self, conf):
+        """ """
+        self.conf = conf
+
+    def setup_argv(self, argv):
+        self.argv = argv
+
+    def setup_parser(self, parser):
+        self.parser = parser
 
     def _setup_response(self):
         """ """
         if self.request is not None:
             return
 
-        self.request = getattr(self, self.args.command)(self.unknown_args)
+        # Call the function specified on the command line!
+        self.request = self.argv.func()
 
         # Send the request and print the response
         self.response_str = self.send(self.request)
@@ -93,119 +95,202 @@ class MoltenIron(object):
 
         return self.response_json
 
-    def add(self, argv):
+    @command
+    def add(self, subparsers = None):
         """Generate a request to add a node to the MoltenIron database """
-        parser = argparse.ArgumentParser(
-            description='Add a node to the micli')
-        parser.add_argument('name', help="Name of the baremetal node")
-        parser.add_argument('ipmi_ip', help="IP for issuing IPMI commands to"
-                            " this node")
-        parser.add_argument('ipmi_user', help="IPMI username used when issuing"
-                            " IPMI commands to this node")
-        parser.add_argument('ipmi_password', help="IPMI password used when"
-                            " issuing IPMI commands to this node")
-        parser.add_argument('allocation_pool', help="Comma separated list of"
-                            " IPs to be used in deployment")
-        parser.add_argument('port_hwaddr', help="MAC address of port on"
-                            " machine to use during deployment")
-        parser.add_argument('cpu_arch', help="Architecture of the node")
-        parser.add_argument('cpus', type=int, help="Number of CPUs on the"
-                            " node")
-        parser.add_argument('ram_mb', type=int, help="Amount of RAM (in MiB)"
-                            " that the node has")
-        parser.add_argument('disk_gb', type=int, help="Amount of disk (in GiB)"
-                            " that the node has")
+        if subparsers is not None:
+            sp = subparsers.add_parser("add")
+            # description='Add a node to the micli')
+            sp.add_argument("name",
+                            help="Name of the baremetal node")
+            sp.add_argument("ipmi_ip",
+                            help="IP for issuing IPMI commands to"
+                                 " this node")
+            sp.add_argument("ipmi_user",
+                            help="IPMI username used when issuing"
+                                 " IPMI commands to this node")
+            sp.add_argument("ipmi_password",
+                            help="IPMI password used when"
+                                 " issuing IPMI commands to this node")
+            sp.add_argument("allocation_pool",
+                            help="Comma separated list of"
+                                 " IPs to be used in deployment")
+            sp.add_argument("port_hwaddr",
+                            help="MAC address of port on"
+                                 " machine to use during deployment")
+            sp.add_argument("cpu_arch",
+                            help="Architecture of the node")
+            sp.add_argument("cpus",
+                            type=int,
+                            help="Number of CPUs on the node")
+            sp.add_argument("ram_mb",
+                            type=int,
+                            help="Amount of RAM (in MiB)"
+                                 " that the node has")
+            sp.add_argument("disk_gb",
+                            type=int,
+                            help="Amount of disk (in GiB)"
+                                 " that the node has")
+            sp.set_defaults(func=self.add)
+            return
 
-        args = parser.parse_args(argv)
-        request = vars(args)
+        # Make a map of our arguments
+        request = vars(self.argv)
+
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
         request['method'] = 'add'
+
         return request
 
-    def allocate(self, argv):
+    @command
+    def allocate(self, subparsers = None):
         """Generate request to checkout a node from the MoltenIron database """
-        parser = argparse.ArgumentParser(
-            description="Checkout a node in molteniron. Returns the node's"
-                        " info")
-        parser.add_argument('owner_name', help="Name of the requester")
-        parser.add_argument('number_of_nodes', type=int, help="How many nodes"
-                            " to reserve")
+        if subparsers is not None:
+            sp = subparsers.add_parser("allocate")
+            # description="Checkout a node in molteniron. Returns the node's"
+            #             " info")
+            sp.add_argument("owner_name",
+                            help="Name of the requester")
+            sp.add_argument("number_of_nodes",
+                            type=int,
+                            help="How many nodes to reserve")
+            sp.set_defaults(func=self.allocate)
+            return
 
-        args = parser.parse_args(argv)
-        request = vars(args)
+        # Make a map of our arguments
+        request = vars(self.argv)
+
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
         request['method'] = 'allocate'
+
         return request
 
-    def release(self, argv):
+    @command
+    def release(self, subparsers = None):
         """Generate a request to release an allocated node from the MoltenIron
         database
         """
-        parser = argparse.ArgumentParser(
-            description="Given an owner name, release allocated node,"
-                        " returning it to the available state")
-        parser.add_argument('owner_name', help="Name of the owner who"
-                            " currently owns the nodes to be released")
-        args = parser.parse_args(argv)
+        if subparsers is not None:
+            sp = subparsers.add_parser("release")
+            # description="Given an owner name, release allocated node,"
+            #             " returning it to the available state")
+            sp.add_argument("owner_name",
+                            help="Name of the owner who"
+                                 " currently owns the nodes to be released")
+            sp.set_defaults(func=self.release)
+            return
 
-        request = vars(args)
+        # Make a map of our arguments
+        request = vars(self.argv)
+
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
         request['method'] = 'release'
+
         return request
 
-    def get_field(self, argv):
+    @command
+    def get_field(self, subparsers = None):
         """Generate a request to return a field of data from an owned node from
         the MoltenIron database
         """
-        parser = argparse.ArgumentParser(
-            description="Given an owner name and the name of a field, get the"
-                        " value of the field")
+        if subparsers is not None:
+            sp = subparsers.add_parser("get_field")
+            # description="Given an owner name and the name of a field, get"
+            #             " the value of the field")
+            sp.add_argument("owner_name",
+                            help="Name of the owner who currently"
+                                 " owns the nodes to get the field from")
+            sp.add_argument("field_name",
+                            help="Name of the field to retrieve"
+                                 " the value from")
+            sp.set_defaults(func=self.get_field)
+            return
 
-        parser.add_argument('owner_name', help="Name of the owner who"
-                            " currently owns the nodes to get the field from")
-        parser.add_argument('field_name', help="Name of the field to retrieve"
-                            " the value from")
+        # Make a map of our arguments
+        request = vars(self.argv)
 
-        args = parser.parse_args(argv)
-        request = vars(args)
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
         request['method'] = 'get_field'
+
         return request
 
-    def set_field(self, argv):
+    @command
+    def set_field(self, subparsers = None):
         """Generate request to set a field of data from an id in the MoltenIron
         database
         """
-        parser = argparse.ArgumentParser(
-            description='Given an id, set a field with a value')
+        if subparsers is not None:
+            sp = subparsers.add_parser("set_field")
+            # description="Given an id, set a field with a value")
+            sp.add_argument("id",
+                            help="Id of the entry")
+            sp.add_argument("key",
+                            help="Field name to set")
+            sp.add_argument("value",
+                            help="Field value to set")
+            sp.set_defaults(func=self.set_field)
+            return
 
-        parser.add_argument('id', help='Id of the entry')
-        parser.add_argument('key', help='Field name to set')
-        parser.add_argument('value', help='Field value to set')
+        # Make a map of our arguments
+        request = vars(self.argv)
 
-        args = parser.parse_args(argv)
-        request = vars(args)
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
         request['method'] = 'set_field'
+
         return request
 
-    def status(self, argv):
+    @command
+    def status(self, subparsers = None):
         """Return status """
-        parser = argparse.ArgumentParser(
-            description="Return a list of current MoltenIron Node database"
-                        " entries")
+        if subparsers is not None:
+            sp = subparsers.add_parser("status")
+            # description="Return a list of current MoltenIron Node database"
+            #             " entries")
+            sp.set_defaults(func=self.status)
+            return
 
-        args = parser.parse_args(argv)
-        request = vars(args)
+        # Make a map of our arguments
+        request = vars(self.argv)
+
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
         request['method'] = 'status'
+
         return request
 
-    def delete_db(self, argv):
+    @command
+    def delete_db(self, subparsers = None):
         """Delete all database entries"""
-        parser = argparse.ArgumentParser(
-            description="Delete every entry in the MoltenIron Node database")
+        if subparsers is not None:
+            sp = subparsers.add_parser("delete_db")
+            # description="Delete every entry in the MoltenIron Node database")
+            sp.set_defaults(func=self.delete_db)
+            return
 
-        args = parser.parse_args(argv)
-        request = vars(args)
+        # Make a map of our arguments
+        request = vars(self.argv)
+
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
         request['method'] = 'delete_db'
+
         return request
 
 if __name__ == "__main__":
+    mi = MoltenIron()
+
     parser = argparse.ArgumentParser(description="Molteniron command line tool")
     parser.add_argument("-c",
                         "--conf-dir",
@@ -214,12 +299,15 @@ if __name__ == "__main__":
                         dest="conf_dir",
                         help="The directory where configuration is stored")
 
-    # We want individual command help later. So we need to remove a --help
-    # found at the end of the command line as long as there is at least
-    # one argument that doesn't start with '-'.
-    (argv, rest_argv) = split_commandline_args(list(sys.argv[1:]))
-    (args, unknown_args) = parser.parse_known_args (argv)
-    unknown_args += rest_argv
+    subparsers = parser.add_subparsers(help="sub-command help")
+
+    # Register all decorated class functions by telling them argparse
+    # is running
+    for (cmd_name, cmd_func) in command.all.items():
+        func = getattr(mi, cmd_name)
+        func (subparsers) # Tell the function to setup for argparse
+
+    args = parser.parse_args()
 
     if args.conf_dir:
         if not os.path.isdir (args.conf_dir):
@@ -234,7 +322,9 @@ if __name__ == "__main__":
     with open(yaml_file, "r") as fobj:
         conf = yaml.load(fobj)
 
-        mi = MoltenIron(conf, unknown_args)
+        mi.setup_conf(conf)
+        mi.setup_argv(args)
+        mi.setup_parser(parser)
 
         print(mi.get_response())
 
