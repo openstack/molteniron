@@ -53,13 +53,22 @@ class MoltenIron(object):
         parser = argparse.ArgumentParser()
         parser.add_argument('command', help='Subcommand to run')
 
-        (args, unknown_args) = parser.parse_known_args (argv)
-        unknown_args += rest_argv
+        (self.args, self.unknown_args) = parser.parse_known_args (argv)
+        self.unknown_args += rest_argv
 
-        request = getattr(self, args.command)(unknown_args)
+        self.request = None
+        self.response_str = None
+        self.response_json = None
+
+    def _setup_response(self):
+        """ """
+        if self.request is not None:
+            return
+
+        self.request = getattr(self, self.args.command)(self.unknown_args)
 
         # Send the request and print the response
-        self.response_str = self.send(request)
+        self.response_str = self.send(self.request)
         self.response_json = json.loads(self.response_str)
 
     def send(self, request):
@@ -74,10 +83,14 @@ class MoltenIron(object):
 
     def get_response(self):
         """Returns the response from the server """
+        self._setup_response()
+
         return self.response_str
 
     def get_response_map(self):
         """Returns the response from the server """
+        self._setup_response()
+
         return self.response_json
 
     def add(self, argv):
