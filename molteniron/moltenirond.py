@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+This is the MoltenIron server.
+"""
+
 # Copyright (c) 2016 IBM Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +18,14 @@
 # implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# flake8 disabling E242
+# https://pep8.readthedocs.io/en/latest/intro.html
+# https://gitlab.com/pycqa/flake8/issues/63
+# Gah!
+
+# pylint: disable-msg=C0103
+# pylint: disable=redefined-outer-name
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import calendar
@@ -46,7 +58,9 @@ metadata = MetaData()
 
 
 class JSON_encoder_with_DateTime(json.JSONEncoder):
+    """Special class to allow json to encode datetime objects"""
     def default(self, o):
+        """Override default"""
         if isinstance(o, datetime):
             return o.isoformat()
 
@@ -59,7 +73,9 @@ class JSON_encoder_with_DateTime(json.JSONEncoder):
 # http://stackoverflow.com/questions/1713038/super-fails-with-error-typeerror-
 # argument-1-must-be-type-not-classobj
 class OBaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
+    """Converts BaseHTTPRequestHandler into a new-style class"""
     pass
+
 
 # We need to pass in conf into MoltenIronHandler, so make a class factory
 # to do that
@@ -67,21 +83,26 @@ class OBaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
 # http://stackoverflow.com/questions/21631799/how-can-i-pass-parameters-to-a-
 # requesthandler
 def MakeMoltenIronHandlerWithConf(conf):
+    """Allows passing in conf to MoltenIronHandler,"""
     class MoltenIronHandler(OBaseHTTPRequestHandler):
+        """HTTP handler class"""
         def __init__(self, *args, **kwargs):
             # Note this *needs* to be done before call to super's class!
             self.conf = conf
+            self.data_string = None
             super(OBaseHTTPRequestHandler, self).__init__(*args, **kwargs)
 
         def do_POST(self):
+            """HTTP POST support"""
             CL = 'Content-Length'
             self.data_string = self.rfile.read(int(self.headers[CL]))
             response = self.parse(self.data_string)
             self.send_reply(response)
 
         def send_reply(self, response):
+            """Sends the HTTP reply"""
             if DEBUG:
-                print("send_reply: response = %s" % (response,))
+                print "send_reply: response = %s" % (response,)
             # get the status code off the response json and send it
             status_code = response['status']
             self.send_response(status_code)
@@ -121,7 +142,7 @@ def MakeMoltenIronHandlerWithConf(conf):
                 response = {'status': 400, 'message': str(e)}
 
             if DEBUG:
-                print("parse: response = %s" % (response,))
+                print "parse: response = %s" % (response,)
 
             return response
 
@@ -129,6 +150,7 @@ def MakeMoltenIronHandlerWithConf(conf):
 
 
 class Nodes(declarative_base()):
+    """Nodes database class"""
 
     __tablename__ = 'Nodes'
 
@@ -182,6 +204,7 @@ class Nodes(declarative_base()):
                       timestamp)
 
     def map(self):
+        """Returns a map of the database row contents"""
         return {key: value for key, value
                 in self.__dict__.items()
                 if not key.startswith('_') and not callable(key)}
@@ -216,6 +239,7 @@ timestamp='%s'/>"""
 
 
 class IPs(declarative_base()):
+    """IPs database class"""
 
     __tablename__ = 'IPs'
 
@@ -291,25 +315,26 @@ class DataBase():
         self.element_info = [
             # The following are returned from the query call
 
-            # field_name       length  special_fmt skip
-            ("id",                 4, int,        False),
-            ("name",               6, str,        False),
-            ("ipmi_ip",            9, str,        False),
-            ("ipmi_user",         11, str,        False),
-            ("ipmi_password",     15, str,        False),
-            ("port_hwaddr",       19, str,        False),
-            ("cpu_arch",          10, str,        False),
-            ("cpus",               6, int,        False),
-            ("ram_mb",             8, int,        False),
-            ("disk_gb",            9, int,        False),
-            ("status",             8, str,        False),
-            ("provisioned",       13, str,        False),
+            # field_name length special_fmt skip
+            ("id", 4, int, False),
+            ("name", 6, str, False),
+            ("ipmi_ip", 9, str, False),
+            ("ipmi_user", 11, str, False),
+            ("ipmi_password", 15, str, False),
+            ("port_hwaddr", 19, str, False),
+            ("cpu_arch", 10, str, False),
+            ("cpus", 6, int, False),
+            ("ram_mb", 8, int, False),
+            ("disk_gb", 9, int, False),
+            ("status", 8, str, False),
+            ("provisioned", 13, str, False),
             # We add timeString
-            ("time",              14, float,      False),
+            ("time", 14, float, False),
         ]
         self.setup_status()
 
     def create_engine(self):
+        """Create the sqlalchemy database engine"""
         engine = None
 
         if self.db_type == TYPE_MYSQL:
@@ -333,11 +358,12 @@ class DataBase():
         return engine
 
     def close(self):
+        """Close the sqlalchemy database engine"""
         if DEBUG:
-            print("close: Calling engine.dispose()")
+            print "close: Calling engine.dispose()"
         self.engine.dispose()
         if DEBUG:
-            print("close: Finished")
+            print "close: Finished"
 
     def get_session(self):
         """Get a SQL academy session from the pool """
@@ -376,12 +402,13 @@ class DataBase():
             yield conn
         except Exception as e:
             if DEBUG:
-                print("Exception caught in connection_scope: %s" % (e,))
+                print "Exception caught in connection_scope: %s" % (e,)
             raise
         finally:
             conn.close()
 
     def delete_db(self):
+        """Delete the sqlalchemy database"""
         # Instead of:
         #   IPs.__table__.drop(self.engine, checkfirst=True)
         #   Nodes.__table__.drop(self.engine, checkfirst=True)
@@ -390,16 +417,18 @@ class DataBase():
         return {'status': 200}
 
     def create_metadata(self):
+        """Create the sqlalchemy database metadata"""
         # Instead of:
         #   Nodes.__table__.create(self.engine, checkfirst=True)
         #   IPs.__table__.create(self.engine, checkfirst=True)
         if DEBUG:
-            print("create_metadata: Calling metadata.create_all")
+            print "create_metadata: Calling metadata.create_all"
         metadata.create_all(self.engine, checkfirst=True)
         if DEBUG:
-            print("create_metadata: Finished")
+            print "create_metadata: Finished"
 
     def to_timestamp(self, ts):
+        """Convert from a database time stamp to a Python time stamp"""
         timestamp = None
         if self.db_type == TYPE_MYSQL:
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S", ts)
@@ -409,6 +438,7 @@ class DataBase():
         return timestamp
 
     def from_timestamp(self, timestamp):
+        """Convert from a Python time stamp to a database time stamp"""
         ts = None
         if self.db_type == TYPE_MYSQL:
             ts = time.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
@@ -421,13 +451,13 @@ class DataBase():
 
         try:
             with self.session_scope() as session, \
-                     self.connection_scope() as conn:
+                    self.connection_scope() as conn:
 
                 # Get a list of IDs for nodes that are free
                 count = session.query(Nodes).filter_by(status="ready").count()
 
                 # If we don't have enough nodes return an error
-                if (count < how_many):
+                if count < how_many:
                     fmt = "Not enough available nodes found."
                     fmt += " Found %d, requested %d"
                     return {'status': 404,
@@ -435,22 +465,23 @@ class DataBase():
 
                 nodes_allocated = {}
 
-                for i in range(how_many):
+                for _ in range(how_many):
                     first_ready = session.query(Nodes)
                     first_ready = first_ready.filter_by(status="ready")
                     first_ready = first_ready.first()
 
-                    id = first_ready.id
+                    node_id = first_ready.id
                     # We have everything we need from node
 
                     log(self.conf,
-                        "allocating node id: %d for %s" % (id, owner_name, ))
+                        "allocating node id: %d for %s" % (node_id,
+                                                           owner_name, ))
 
                     timestamp = self.to_timestamp(time.gmtime())
 
                     # Update the node to the in use state
                     stmt = update(Nodes)
-                    stmt = stmt.where(Nodes.id == id)
+                    stmt = stmt.where(Nodes.id == node_id)
                     stmt = stmt.values(status="dirty",
                                        provisioned=owner_name,
                                        timestamp=timestamp)
@@ -460,7 +491,8 @@ class DataBase():
                     session.close()
                     session = self.get_session()
 
-                    first_ready = session.query(Nodes).filter_by(id=id).one()
+                    first_ready = session.query(Nodes).filter_by(id=node_id)
+                    first_ready = first_ready.one()
 
                     first_ready_node = first_ready.map()
 
@@ -474,19 +506,19 @@ class DataBase():
                         = ','.join(allocation_pool)
 
                     # Add the node to the nodes dict
-                    nodes_allocated['node_%d' % (id, )] = first_ready_node
+                    nodes_allocated['node_%d' % (node_id, )] = first_ready_node
 
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in deallocateBM: %s" % (e,))
+                print "Exception caught in deallocateBM: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
 
         return {'status': 200, 'nodes': nodes_allocated}
 
-    def deallocateBM(self, id):
+    def deallocateBM(self, node_id):
         """Given the ID of a node (or the IPMI IP), de-allocate that node.
 
         This changes the node status of that node from "used" to "ready."
@@ -494,15 +526,17 @@ class DataBase():
 
         try:
             with self.session_scope() as session, \
-                 self.connection_scope() as conn:
+                    self.connection_scope() as conn:
 
                 query = session.query(Nodes.id, Nodes.ipmi_ip, Nodes.name)
 
-                if (type(id) == str or type(id) == unicode) and ("." in id):
+                if (isinstance(node_id, str) or
+                        isinstance(node_id, unicode)) \
+                   and ("." in node_id):
                     # If an ipmi_ip was passed
-                    query = query.filter_by(ipmi_ip=id)
+                    query = query.filter_by(ipmi_ip=node_id)
                 else:
-                    query = query.filter_by(id=id)
+                    query = query.filter_by(id=node_id)
 
                 node = query.one()
 
@@ -520,7 +554,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in deallocateBM: %s" % (e,))
+                print "Exception caught in deallocateBM: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -544,7 +578,7 @@ class DataBase():
                     self.deallocateBM(node.id)
         except Exception as e:
             if DEBUG:
-                print("Exception caught in deallocateOwner: %s" % (e,))
+                print "Exception caught in deallocateOwner: %s" % (e,)
             message = "Failed to deallocate node with ID %d" % (node.id,)
             return {'status': 400, 'message': message}
 
@@ -568,7 +602,7 @@ class DataBase():
 
         try:
             if DEBUG:
-                print("addBMNode: node = %s" % (node, ))
+                print "addBMNode: node = %s" % (node, )
 
             with self.session_scope() as session, \
                     self.connection_scope() as conn:
@@ -604,15 +638,15 @@ class DataBase():
                 if 'timestamp' in node:
                     timestamp_str = node['timestamp']
                     if DEBUG:
-                        print("timestamp_str = %s" % (timestamp_str, ))
+                        print "timestamp_str = %s" % (timestamp_str, )
                     if len(timestamp_str) != 0 and timestamp_str != "-1":
                         ts = time.gmtime(float(timestamp_str))
                         timestamp = self.to_timestamp(ts)
                         if DEBUG:
-                            print("timestamp = %s" % (timestamp, ))
+                            print "timestamp = %s" % (timestamp, )
                         stmt = stmt.values(timestamp=timestamp)
                 if DEBUG:
-                    print(stmt.compile().params)
+                    print stmt.compile().params
 
                 conn.execute(stmt)
 
@@ -633,14 +667,14 @@ class DataBase():
                     stmt = stmt.values(node_id=new_node.id, ip=ip)
 
                     if DEBUG:
-                        print(stmt.compile().params)
+                        print stmt.compile().params
 
                     conn.execute(stmt)
 
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in addBMNode: %s" % (e,))
+                print "Exception caught in addBMNode: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -656,7 +690,7 @@ class DataBase():
 
         try:
             with self.session_scope() as session, \
-                 self.connection_scope() as conn:
+                    self.connection_scope() as conn:
 
                 query = session.query(Nodes.id, Nodes.ipmi_ip, Nodes.name)
                 query = query.filter_by(id=int(ID))
@@ -685,7 +719,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in removeBMNode: %s" % (e,))
+                print "Exception caught in removeBMNode: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -701,7 +735,7 @@ class DataBase():
         """
 
         if DEBUG:
-            print("cull: maxSeconds = %s" % (maxSeconds, ))
+            print "cull: maxSeconds = %s" % (maxSeconds, )
 
         nodes_culled = {}
 
@@ -711,12 +745,12 @@ class DataBase():
                 nodes = session.query(Nodes)
 
                 if DEBUG:
-                    print("There are %d nodes" % (nodes.count(), ))
+                    print "There are %d nodes" % (nodes.count(), )
 
                 for node in nodes:
 
                     if DEBUG:
-                        print(node)
+                        print node
 
                     if node.timestamp in ('', '-1', None):
                         continue
@@ -741,7 +775,7 @@ class DataBase():
                     log(self.conf, logstring)
 
                     if DEBUG:
-                        print(logstring)
+                        print logstring
 
                     self.deallocateBM(node.id)
 
@@ -751,7 +785,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in cull: %s" % (e,))
+                print "Exception caught in cull: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -763,7 +797,7 @@ class DataBase():
 
         try:
             with self.session_scope() as session, \
-                 self.connection_scope() as conn:
+                    self.connection_scope() as conn:
 
                 query = session.query(Nodes)
                 query = query.filter_by(id=node_id)
@@ -772,7 +806,7 @@ class DataBase():
                 if node.status in ('ready', ''):
                     return {'status': 400,
                             'message': 'The node at %d has status %s'
-                            % (node.id, node.status,)}
+                                       % (node.id, node.status,)}
 
                 logstring = "The node at %s has been cleaned." % \
                             (node.ipmi_ip,)
@@ -787,7 +821,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in doClean: %s" % (e,))
+                print "Exception caught in doClean: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -815,7 +849,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in get_ips: %s" % (e,))
+                print "Exception caught in get_ips: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -855,14 +889,14 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in get_field: %s" % (e,))
+                print "Exception caught in get_field: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
 
         return {'status': 200, 'result': results}
 
-    def set_field(self, id, key, value):
+    def set_field(self, node_id, key, value):
         """Given an identifying id, set specified key to the passed value. """
 
         if not hasattr(Nodes, key):
@@ -871,22 +905,22 @@ class DataBase():
 
         try:
             with self.session_scope() as session, \
-                 self.connection_scope() as conn:
+                    self.connection_scope() as conn:
 
                 query = session.query(Nodes)
-                nodes = query.filter_by(id=id)
+                nodes = query.filter_by(id=node_id)
 
                 if nodes.count() == 0:
                     return {'status': 404,
                             'message': 'Node with id of %s does not exist!'
-                                       % id}
+                                       % node_id}
 
                 nodes.one()
 
                 kv = {key: value}
 
                 stmt = update(Nodes)
-                stmt = stmt.where(Nodes.id == id)
+                stmt = stmt.where(Nodes.id == node_id)
                 stmt = stmt.values(**kv)
 
                 conn.execute(stmt)
@@ -894,7 +928,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in set_field: %s" % (e,))
+                print "Exception caught in set_field: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -991,7 +1025,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print("Exception caught in status: %s" % (e,))
+                print "Exception caught in status: %s" % (e,)
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -1000,10 +1034,11 @@ class DataBase():
 
 
 def listener(conf):
+    """HTTP listener"""
     mi_addr = str(conf['serverIP'])
     mi_port = int(conf['mi_port'])
     handler_class = MakeMoltenIronHandlerWithConf(conf)
-    print('Listening... to %s:%d' % (mi_addr, mi_port,))
+    print 'Listening... to %s:%d' % (mi_addr, mi_port,)
     moltenirond = HTTPServer((mi_addr, mi_port), handler_class)
     moltenirond.serve_forever()
 
@@ -1041,27 +1076,15 @@ def log(conf, message):
     logdir = conf["logdir"]
     now = datetime.today()
 
-    fname = ( "molteniron-"
-            + str(now.day)
-            + "-"
-            + str(now.month)
-            + "-"
-            + str(now.year)
-            + ".log"
-            )
+    fname = "molteniron-%d-%d-%d.log" % (now.day,
+                                         now.month,
+                                         now.year, )
 
-    timestamp = ( "{0:0>2}".format(str(now.hour))
-                + ":"
-                + "{0:0>2}".format(str(now.minute))
-                + ":"
-                + "{0:0>2}".format(str(now.second))
-                )
+    timestamp = "{0:0>2}".format(str(now.hour))
+    timestamp += ":{0:0>2}".format(str(now.minute))
+    timestamp += ":{0:0>2}".format(str(now.second))
 
-    message = ( timestamp 
-              + "  "
-              + message
-              + "\n"
-              )
+    message = timestamp + "  " + message + "\n"
 
     # check if logdir exists, if not create it
     if not os.path.isdir(logdir):
@@ -1102,10 +1125,10 @@ if __name__ == "__main__":
                         dest="conf_dir",
                         help="The directory where configuration is stored")
 
-    args = parser.parse_args ()
+    args = parser.parse_args()
 
     if args.conf_dir:
-        if not os.path.isdir (args.conf_dir):
+        if not os.path.isdir(args.conf_dir):
             msg = "Error: %s is not a valid directory" % (args.conf_dir, )
             print >> sys.stderr, msg
             sys.exit(1)

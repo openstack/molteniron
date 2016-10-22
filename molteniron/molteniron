@@ -1,5 +1,10 @@
 #! /usr/bin/env python
 
+"""
+This is the MoltenIron Command Line client that speaks to
+a MoltenIron server.
+"""
+
 # Copyright (c) 2016 IBM Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,21 +20,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable-msg=C0103
+# pylint: disable=redefined-outer-name
+
 import argparse
 import httplib
 import json
 import sys
 import os
 import yaml
-import argparse
 
 DEBUG = False
 
 
 # Create a decorator pattern that maintains a registry
 def makeRegistrar():
+    """Decorator that keeps track of tagged functions."""
     registry = {}
+
     def registrar(func):
+        """Store the function pointer."""
         registry[func.__name__] = func
         # normally a decorator returns a wrapped function,
         # but here we return func unmodified, after registering it
@@ -42,6 +52,7 @@ command = makeRegistrar()
 
 
 class MoltenIron(object):
+    """This is the MoltenIron client object."""
 
     def __init__(self):
         self.conf = None
@@ -51,15 +62,17 @@ class MoltenIron(object):
         self.response_str = None
         self.response_json = None
 
-    def setup_conf(self, conf):
-        """ """
-        self.conf = conf
+    def setup_conf(self, _conf):
+        """Sets the class variable to what is passed in. """
+        self.conf = _conf
 
-    def setup_argv(self, argv):
-        self.argv = argv
+    def setup_argv(self, _argv):
+        """Sets the class variable to what is passed in. """
+        self.argv = _argv
 
-    def setup_parser(self, parser):
-        self.parser = parser
+    def setup_parser(self, _parser):
+        """Sets the class variable to what is passed in. """
+        self.parser = _parser
 
     def _setup_response(self):
         """ """
@@ -96,7 +109,7 @@ class MoltenIron(object):
         return self.response_json
 
     @command
-    def add(self, subparsers = None):
+    def add(self, subparsers=None):
         """Generate a request to add a node to the MoltenIron database """
         if subparsers is not None:
             sp = subparsers.add_parser("add")
@@ -145,7 +158,7 @@ class MoltenIron(object):
         return request
 
     @command
-    def allocate(self, subparsers = None):
+    def allocate(self, subparsers=None):
         """Generate request to checkout a node from the MoltenIron database """
         if subparsers is not None:
             sp = subparsers.add_parser("allocate")
@@ -170,7 +183,7 @@ class MoltenIron(object):
         return request
 
     @command
-    def release(self, subparsers = None):
+    def release(self, subparsers=None):
         """Generate a request to release an allocated node from the MoltenIron
         database
         """
@@ -195,7 +208,7 @@ class MoltenIron(object):
         return request
 
     @command
-    def get_field(self, subparsers = None):
+    def get_field(self, subparsers=None):
         """Generate a request to return a field of data from an owned node from
         the MoltenIron database
         """
@@ -223,7 +236,7 @@ class MoltenIron(object):
         return request
 
     @command
-    def set_field(self, subparsers = None):
+    def set_field(self, subparsers=None):
         """Generate request to set a field of data from an id in the MoltenIron
         database
         """
@@ -250,7 +263,7 @@ class MoltenIron(object):
         return request
 
     @command
-    def status(self, subparsers = None):
+    def status(self, subparsers=None):
         """Return status """
         if subparsers is not None:
             sp = subparsers.add_parser("status")
@@ -270,7 +283,7 @@ class MoltenIron(object):
         return request
 
     @command
-    def delete_db(self, subparsers = None):
+    def delete_db(self, subparsers=None):
         """Delete all database entries"""
         if subparsers is not None:
             sp = subparsers.add_parser("delete_db")
@@ -291,7 +304,7 @@ class MoltenIron(object):
 if __name__ == "__main__":
     mi = MoltenIron()
 
-    parser = argparse.ArgumentParser(description="Molteniron command line tool")
+    parser = argparse.ArgumentParser(description="Molteniron CLI tool")
     parser.add_argument("-c",
                         "--conf-dir",
                         action="store",
@@ -305,12 +318,12 @@ if __name__ == "__main__":
     # is running
     for (cmd_name, cmd_func) in command.all.items():
         func = getattr(mi, cmd_name)
-        func (subparsers) # Tell the function to setup for argparse
+        func(subparsers)  # Tell the function to setup for argparse
 
     args = parser.parse_args()
 
     if args.conf_dir:
-        if not os.path.isdir (args.conf_dir):
+        if not os.path.isdir(args.conf_dir):
             msg = "Error: %s is not a valid directory" % (args.conf_dir, )
             print >> sys.stderr, msg
             sys.exit(1)
@@ -326,12 +339,12 @@ if __name__ == "__main__":
         mi.setup_argv(args)
         mi.setup_parser(parser)
 
-        print(mi.get_response())
+        print mi.get_response()
 
         try:
             rc = mi.get_response_map()['status']
         except KeyError:
-            print("Error: Server returned: %s" % (mi.get_response_map(),))
+            print "Error: Server returned: %s" % (mi.get_response_map(),)
             rc = 444
 
         if rc == 200:

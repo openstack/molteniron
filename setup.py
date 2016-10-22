@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+Install the molteniron python package.
+"""
+
 # Copyright (c) 2016 IBM Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,5 +27,4 @@ setup(name="molteniron",
       url="https://github.com/openstack/third-party-ci-tools",
       py_modules=["molteniron/__init__", "molteniron/moltenirond"],
       scripts=["molteniron/moltenirond-helper", "molteniron/molteniron"],
-      data_files=[("etc/molteniron/", ["conf.yaml"])]
-     )
+      data_files=[("etc/molteniron/", ["conf.yaml"])])

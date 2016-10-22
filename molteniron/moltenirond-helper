@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+This is a helper program for the MoltenIron server.
+"""
+
 # Copyright (c) 2016 IBM Corporation.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +19,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable-msg=C0103
+# pylint: disable=redefined-outer-name
+
 import argparse
 import sys
 import os
@@ -27,16 +34,22 @@ PID = "/var/run/moltenirond.pid"
 YAML_CONF = "/usr/local/etc/molteniron/conf.yaml"
 ERROR_LOGFILE = "/tmp/MoltenIron-error-logfile"
 
+
 class MoltenIronPIDNotFound(RuntimeError):
     """os.path.isfile() error: The PID file does not exist"""
+
 
 class MoltenIronKillError(RuntimeError):
     """os.kill() error"""
 
+
 class MoltenIronReadLinesError(RuntimeError):
     """fobj.readlines() error"""
 
+
 def get_moltenirond_pid():
+    """Return the PID of the MoltenIron server process."""
+
     if not os.path.isfile(PID):
         raise MoltenIronPIDNotFound("isfile error %s" % (PID, ))
 
@@ -55,16 +68,23 @@ def get_moltenirond_pid():
         except Exception as e:
             raise MoltenIronReadLinesError("readlines error: %s" % (e, ))
 
+
 def moltenirond_main():
+    """This is the main routine for the MoltenIron server."""
+
     with open(YAML_CONF, "r") as fobj:
         conf = yaml.load(fobj)
 
         moltenirond.listener(conf)
 
+
 def log_error(s):
+    """Log an error to stderr and to a file."""
+
     with open(ERROR_LOGFILE, "a+") as fobj:
         fobj.writelines(s + "\n")
         print >> sys.stderr, s
+
 
 if __name__ == "__main__":
 
@@ -89,10 +109,10 @@ if __name__ == "__main__":
                         help="Set a verbose information mode")
     parser.add_argument("command", type=str, nargs=1, help="the command")
 
-    args = parser.parse_args ()
+    args = parser.parse_args()
 
     if args.conf_dir:
-        if not os.path.isdir (args.conf_dir):
+        if not os.path.isdir(args.conf_dir):
             msg = "Error: %s is not a valid directory" % (args.conf_dir, )
             print >> sys.stderr, msg
             sys.exit(1)
@@ -100,7 +120,7 @@ if __name__ == "__main__":
         YAML_CONF = os.path.realpath("%s/conf.yaml" % (args.conf_dir, ))
 
     if args.pid_dir:
-        if not os.path.isdir (args.pid_dir):
+        if not os.path.isdir(args.pid_dir):
             msg = "Error: %s is not a valid directory" % (args.pid_dir, )
             print >> sys.stderr, msg
             sys.exit(1)
@@ -114,35 +134,37 @@ if __name__ == "__main__":
     if len(args.command) != 1:
         msg = "Error: Expecting one command? Received: %s" % (args.command, )
         log_error(msg)
-        sys.exit (1)
+        sys.exit(1)
 
     if args.command[0].upper().lower() == "start":
         try:
             pid = get_moltenirond_pid()
         except MoltenIronPIDNotFound:
             pid = -1
+
         if pid > 0:
             log_error("Error: The daemon is already running")
             sys.exit(1)
+
         daemon = Daemonize(app="moltenirond",
                            pid=PID,
                            action=moltenirond_main)
+
         daemon.start()
     elif args.command[0].upper().lower() == "stop":
         try:
             pid = get_moltenirond_pid()
-            if pid > 0:
-                os.remove (PID)
-                os.kill(pid, signal.SIGTERM)
-            else:
-                log_error("Error: The daemon doesn't exist?")
-                log_error("Error: pid = %d" % (pid, ))
-                sys.exit(1)
-        except Exception as e:
+        except MoltenIronPIDNotFound:
+            pid = -1
+
+        if pid > 0:
+            os.remove(PID)
+            os.kill(pid, signal.SIGTERM)
+        else:
             log_error("Error: The daemon doesn't exist?")
-            log_error("Error: %s" % (e, ))
+            log_error("Error: pid = %d" % (pid, ))
             sys.exit(1)
     else:
         msg = "Error: Unknown command: %s" % (args.command[0], )
         log_error(msg)
-        sys.exit (1)
+        sys.exit(1)
