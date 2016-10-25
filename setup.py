@@ -1,10 +1,4 @@
-#!/usr/bin/env python
-
-"""
-Install the molteniron python package.
-"""
-
-# Copyright (c) 2016 IBM Corporation.
+# Copyright (c) 2013 Hewlett-Packard Development Company, L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,12 +13,24 @@ Install the molteniron python package.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from distutils.core import setup
+# THIS FILE IS MANAGED BY THE GLOBAL REQUIREMENTS REPO - DO NOT EDIT
+from setuptools import setup
+# from setuptools import find_packages
+
+# In python < 2.7.4, a lazy loading of package `pbr` will break
+# setuptools if some other modules registered functions in `atexit`.
+# solution from: http://bugs.python.org/issue15881#msg170215
+try:
+    import multiprocessing  # noqa
+except ImportError:
+    pass
 
 setup(name="molteniron",
       version="1.0",
-      description="database for Ironic Baremetal services",
-      url="https://github.com/openstack/third-party-ci-tools",
+      description="Client/server database for Ironic Baremetal services",
+      url="https://github.com/openstack/molteniron",
       py_modules=["molteniron/__init__", "molteniron/moltenirond"],
       scripts=["molteniron/moltenirond-helper", "molteniron/molteniron"],
-      data_files=[("etc/molteniron/", ["conf.yaml"])])
+      data_files=[("etc/molteniron/", ["conf.yaml"])],
+      setup_requires=['pbr'],
+      pbr=True)

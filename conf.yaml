@@ -5,5 +5,5 @@ retry: 5
 maxTime: 6000
 logdir: "/tmp"
 maxLogDays: 15
-sqlUser: "root"
-sqlPass: "password"
+sqlUser: "openstack_citest"
+sqlPass: "openstack_citest"
