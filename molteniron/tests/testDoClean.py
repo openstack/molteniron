@@ -21,6 +21,8 @@ Tests the MoltenIron doClean command.
 
 # pylint: disable-msg=C0103
 
+from __future__ import print_function
+
 import sys
 import os
 import yaml
@@ -41,7 +43,7 @@ if __name__ == "__main__":
     if args.conf_dir:
         if not os.path.isdir(args.conf_dir):
             msg = "Error: %s is not a valid directory" % (args.conf_dir, )
-            print >> sys.stderr, msg
+            print(msg, file=sys.stderr)
             sys.exit(1)
 
         yaml_file = os.path.realpath("%s/conf.yaml" % (args.conf_dir, ))
@@ -115,30 +117,30 @@ if __name__ == "__main__":
     # 8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----
     database = moltenirond.DataBase(conf, moltenirond.TYPE_SQLITE_MEMORY)
     ret = database.addBMNode(node1)
-    print ret
+    print(ret)
     assert ret == {'status': 200}
     ret = database.addBMNode(node2)
-    print ret
+    print(ret)
     assert ret == {'status': 200}
     ret = database.addBMNode(node3)
-    print ret
+    print(ret)
     assert ret == {'status': 200}
     ret = database.addBMNode(node4)
-    print ret
+    print(ret)
     assert ret == {'status': 200}
 
     ret = database.doClean(1)
-    print ret
+    print(ret)
     assert ret == {'status': 400, 'message': 'The node at 1 has status ready'}
 
     ret = database.doClean(2)
-    print ret
+    print(ret)
     assert ret == {'status': 400, 'message': 'The node at 2 has status ready'}
 
     ret = database.doClean(3)
-    print ret
+    print(ret)
     assert ret == {'status': 200}
 
     ret = database.doClean(4)
-    print ret
+    print(ret)
     assert ret == {'status': 200}

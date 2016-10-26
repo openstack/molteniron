@@ -23,12 +23,17 @@ a MoltenIron server.
 # pylint: disable-msg=C0103
 # pylint: disable=redefined-outer-name
 
+from __future__ import print_function
+
 import argparse
-import httplib
 import json
-import sys
 import os
+import sys
 import yaml
+if (sys.version_info >= (3, 0)):
+    import http.client  # noqa
+else:
+    import httplib  # noqa
 
 DEBUG = False
 
@@ -88,8 +93,12 @@ class MoltenIron(object):
 
     def send(self, request):
         """Send the generated request """
-        connection = httplib.HTTPConnection(str(self.conf['serverIP']),
-                                            int(self.conf['mi_port']))
+        ip = str(self.conf['serverIP'])
+        port = int(self.conf['mi_port'])
+        if (sys.version_info > (3, 0)):
+            connection = http.client.HTTPConnection(ip, port)  # noqa
+        else:
+            connection = httplib.HTTPConnection(ip, port)  # noqa
         connection.request('POST', '/', json.dumps(request))
 
         response = connection.getresponse()
@@ -316,7 +325,7 @@ if __name__ == "__main__":
 
     # Register all decorated class functions by telling them argparse
     # is running
-    for (cmd_name, cmd_func) in command.all.items():
+    for (cmd_name, cmd_func) in list(command.all.items()):
         func = getattr(mi, cmd_name)
         func(subparsers)  # Tell the function to setup for argparse
 
@@ -325,7 +334,7 @@ if __name__ == "__main__":
     if args.conf_dir:
         if not os.path.isdir(args.conf_dir):
             msg = "Error: %s is not a valid directory" % (args.conf_dir, )
-            print >> sys.stderr, msg
+            print(msg, file=sys.stderr)
             sys.exit(1)
 
         yaml_file = os.path.realpath("%s/conf.yaml" % (args.conf_dir, ))
@@ -339,12 +348,12 @@ if __name__ == "__main__":
         mi.setup_argv(args)
         mi.setup_parser(parser)
 
-        print mi.get_response()
+        print(mi.get_response())
 
         try:
             rc = mi.get_response_map()['status']
         except KeyError:
-            print "Error: Server returned: %s" % (mi.get_response_map(),)
+            print("Error: Server returned: %s" % (mi.get_response_map(),))
             rc = 444
 
         if rc == 200:

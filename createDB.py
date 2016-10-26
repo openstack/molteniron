@@ -21,6 +21,8 @@ Create the MoltenIron user in mysql and grant it access.
 
 # pylint: disable-msg=C0103
 
+from __future__ import print_function
+
 import os
 import sys
 import yaml
@@ -28,7 +30,7 @@ import yaml
 
 def SQL(query):
     """Perform a mysql command"""
-    print os.popen("mysql -u root -p --execute=\"" + query + "\"").read()
+    print(os.popen("mysql -u root -p --execute=\"" + query + "\"").read())
 
 
 def main():

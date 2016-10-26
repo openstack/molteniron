@@ -22,6 +22,8 @@ This is a helper program for the MoltenIron server.
 # pylint: disable-msg=C0103
 # pylint: disable=redefined-outer-name
 
+from __future__ import print_function
+
 import argparse
 import sys
 import os
@@ -83,7 +85,7 @@ def log_error(s):
 
     with open(ERROR_LOGFILE, "a+") as fobj:
         fobj.writelines(s + "\n")
-        print >> sys.stderr, s
+        print(s, file=sys.stderr)
 
 
 if __name__ == "__main__":
@@ -114,7 +116,7 @@ if __name__ == "__main__":
     if args.conf_dir:
         if not os.path.isdir(args.conf_dir):
             msg = "Error: %s is not a valid directory" % (args.conf_dir, )
-            print >> sys.stderr, msg
+            print(msg, file=sys.stderr)
             sys.exit(1)
 
         YAML_CONF = os.path.realpath("%s/conf.yaml" % (args.conf_dir, ))
@@ -122,14 +124,14 @@ if __name__ == "__main__":
     if args.pid_dir:
         if not os.path.isdir(args.pid_dir):
             msg = "Error: %s is not a valid directory" % (args.pid_dir, )
-            print >> sys.stderr, msg
+            print(msg, file=sys.stderr)
             sys.exit(1)
 
         PID = os.path.realpath("%s/moltenirond.pid" % (args.pid_dir, ))
 
     if args.verbose:
-        print "YAML_CONF = %s" % (YAML_CONF, )
-        print "PID = %s" % (PID, )
+        print("YAML_CONF = %s" % (YAML_CONF, ))
+        print("PID = %s" % (PID, ))
 
     if len(args.command) != 1:
         msg = "Error: Expecting one command? Received: %s" % (args.command, )

@@ -27,7 +27,8 @@ This is the MoltenIron server.
 # pylint: disable-msg=C0103
 # pylint: disable=redefined-outer-name
 
-from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+from __future__ import print_function
+
 import calendar
 from datetime import datetime
 import json
@@ -51,6 +52,14 @@ from sqlalchemy.schema import MetaData, Table
 
 import sqlalchemy_utils
 from sqlalchemy.exc import OperationalError
+
+import collections  # noqa
+
+if (sys.version_info >= (3, 0)):
+    from http.server import HTTPServer, BaseHTTPRequestHandler  # noqa
+else:
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler  # noqa
+
 
 DEBUG = False
 
@@ -102,7 +111,7 @@ def MakeMoltenIronHandlerWithConf(conf):
         def send_reply(self, response):
             """Sends the HTTP reply"""
             if DEBUG:
-                print "send_reply: response = %s" % (response,)
+                print("send_reply: response = %s" % (response,))
             # get the status code off the response json and send it
             status_code = response['status']
             self.send_response(status_code)
@@ -142,7 +151,7 @@ def MakeMoltenIronHandlerWithConf(conf):
                 response = {'status': 400, 'message': str(e)}
 
             if DEBUG:
-                print "parse: response = %s" % (response,)
+                print("parse: response = %s" % (response,))
 
             return response
 
@@ -206,8 +215,9 @@ class Nodes(declarative_base()):
     def map(self):
         """Returns a map of the database row contents"""
         return {key: value for key, value
-                in self.__dict__.items()
-                if not key.startswith('_') and not callable(key)}
+                in list(self.__dict__.items())
+                if not key.startswith('_') and
+                not isinstance(key, collections.Callable)}
 
     def __repr__(self):
         fmt = """<Node(name='%s',
@@ -360,10 +370,10 @@ class DataBase():
     def close(self):
         """Close the sqlalchemy database engine"""
         if DEBUG:
-            print "close: Calling engine.dispose()"
+            print("close: Calling engine.dispose()")
         self.engine.dispose()
         if DEBUG:
-            print "close: Finished"
+            print("close: Finished")
 
     def get_session(self):
         """Get a SQL academy session from the pool """
@@ -402,7 +412,7 @@ class DataBase():
             yield conn
         except Exception as e:
             if DEBUG:
-                print "Exception caught in connection_scope: %s" % (e,)
+                print("Exception caught in connection_scope: %s" % (e,))
             raise
         finally:
             conn.close()
@@ -422,10 +432,10 @@ class DataBase():
         #   Nodes.__table__.create(self.engine, checkfirst=True)
         #   IPs.__table__.create(self.engine, checkfirst=True)
         if DEBUG:
-            print "create_metadata: Calling metadata.create_all"
+            print("create_metadata: Calling metadata.create_all")
         metadata.create_all(self.engine, checkfirst=True)
         if DEBUG:
-            print "create_metadata: Finished"
+            print("create_metadata: Finished")
 
     def to_timestamp(self, ts):
         """Convert from a database time stamp to a Python time stamp"""
@@ -511,7 +521,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in deallocateBM: %s" % (e,)
+                print("Exception caught in deallocateBM: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -530,9 +540,16 @@ class DataBase():
 
                 query = session.query(Nodes.id, Nodes.ipmi_ip, Nodes.name)
 
-                if (isinstance(node_id, str) or
-                        isinstance(node_id, unicode)) \
-                   and ("." in node_id):
+# WAS:
+#               if (isinstance(node_id, str) or
+#                       isinstance(node_id, unicode)) \
+#                  and ("." in node_id):
+
+                check = isinstance(node_id, str)
+                if (sys.version_info < (3, 0)):
+                    check = check or isinstance(node_id, unicode)  # noqa
+
+                if (check and ("." in node_id)):
                     # If an ipmi_ip was passed
                     query = query.filter_by(ipmi_ip=node_id)
                 else:
@@ -554,7 +571,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in deallocateBM: %s" % (e,)
+                print("Exception caught in deallocateBM: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -578,7 +595,7 @@ class DataBase():
                     self.deallocateBM(node.id)
         except Exception as e:
             if DEBUG:
-                print "Exception caught in deallocateOwner: %s" % (e,)
+                print("Exception caught in deallocateOwner: %s" % (e,))
             message = "Failed to deallocate node with ID %d" % (node.id,)
             return {'status': 400, 'message': message}
 
@@ -602,7 +619,7 @@ class DataBase():
 
         try:
             if DEBUG:
-                print "addBMNode: node = %s" % (node, )
+                print("addBMNode: node = %s" % (node, ))
 
             with self.session_scope() as session, \
                     self.connection_scope() as conn:
@@ -638,15 +655,15 @@ class DataBase():
                 if 'timestamp' in node:
                     timestamp_str = node['timestamp']
                     if DEBUG:
-                        print "timestamp_str = %s" % (timestamp_str, )
+                        print("timestamp_str = %s" % (timestamp_str, ))
                     if len(timestamp_str) != 0 and timestamp_str != "-1":
                         ts = time.gmtime(float(timestamp_str))
                         timestamp = self.to_timestamp(ts)
                         if DEBUG:
-                            print "timestamp = %s" % (timestamp, )
+                            print("timestamp = %s" % (timestamp, ))
                         stmt = stmt.values(timestamp=timestamp)
                 if DEBUG:
-                    print stmt.compile().params
+                    print(stmt.compile().params)
 
                 conn.execute(stmt)
 
@@ -667,14 +684,14 @@ class DataBase():
                     stmt = stmt.values(node_id=new_node.id, ip=ip)
 
                     if DEBUG:
-                        print stmt.compile().params
+                        print(stmt.compile().params)
 
                     conn.execute(stmt)
 
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in addBMNode: %s" % (e,)
+                print("Exception caught in addBMNode: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -719,7 +736,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in removeBMNode: %s" % (e,)
+                print("Exception caught in removeBMNode: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -735,7 +752,7 @@ class DataBase():
         """
 
         if DEBUG:
-            print "cull: maxSeconds = %s" % (maxSeconds, )
+            print("cull: maxSeconds = %s" % (maxSeconds, ))
 
         nodes_culled = {}
 
@@ -745,12 +762,12 @@ class DataBase():
                 nodes = session.query(Nodes)
 
                 if DEBUG:
-                    print "There are %d nodes" % (nodes.count(), )
+                    print("There are %d nodes" % (nodes.count(), ))
 
                 for node in nodes:
 
                     if DEBUG:
-                        print node
+                        print(node)
 
                     if node.timestamp in ('', '-1', None):
                         continue
@@ -775,7 +792,7 @@ class DataBase():
                     log(self.conf, logstring)
 
                     if DEBUG:
-                        print logstring
+                        print(logstring)
 
                     self.deallocateBM(node.id)
 
@@ -785,7 +802,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in cull: %s" % (e,)
+                print("Exception caught in cull: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -821,7 +838,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in doClean: %s" % (e,)
+                print("Exception caught in doClean: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -849,7 +866,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in get_ips: %s" % (e,)
+                print("Exception caught in get_ips: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -889,7 +906,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in get_field: %s" % (e,)
+                print("Exception caught in get_field: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -928,7 +945,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in set_field: %s" % (e,)
+                print("Exception caught in set_field: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -1025,7 +1042,7 @@ class DataBase():
         except Exception as e:
 
             if DEBUG:
-                print "Exception caught in status: %s" % (e,)
+                print("Exception caught in status: %s" % (e,))
 
             # Don't send the exception object as it is not json serializable!
             return {'status': 400, 'message': str(e)}
@@ -1038,7 +1055,7 @@ def listener(conf):
     mi_addr = str(conf['serverIP'])
     mi_port = int(conf['mi_port'])
     handler_class = MakeMoltenIronHandlerWithConf(conf)
-    print 'Listening... to %s:%d' % (mi_addr, mi_port,)
+    print('Listening... to %s:%d' % (mi_addr, mi_port,))
     moltenirond = HTTPServer((mi_addr, mi_port), handler_class)
     moltenirond.serve_forever()
 
@@ -1130,7 +1147,7 @@ if __name__ == "__main__":
     if args.conf_dir:
         if not os.path.isdir(args.conf_dir):
             msg = "Error: %s is not a valid directory" % (args.conf_dir, )
-            print >> sys.stderr, msg
+            print(msg, file=sys.stderr)
             sys.exit(1)
 
         yaml_file = os.path.realpath("%s/conf.yaml" % (args.conf_dir, ))
