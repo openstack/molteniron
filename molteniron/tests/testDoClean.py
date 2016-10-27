@@ -23,11 +23,12 @@ Tests the MoltenIron doClean command.
 
 from __future__ import print_function
 
-import sys
-import os
-import yaml
 import argparse
 from molteniron import moltenirond
+import os
+import sys
+import yaml
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Molteniron CLI tool")

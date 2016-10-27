@@ -23,11 +23,11 @@ Tests the MoltenIron deallocateOwner command.
 
 from __future__ import print_function
 
-import sys
-import os
-import yaml
 import argparse
 from molteniron import moltenirond
+import os
+import sys
+import yaml
 
 
 def compare_provisioned_nodes(lhs, rhs):

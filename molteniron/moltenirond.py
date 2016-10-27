@@ -29,6 +29,7 @@ This is the MoltenIron server.
 
 from __future__ import print_function
 
+import argparse
 import calendar
 from datetime import datetime
 import json
@@ -37,25 +38,24 @@ import sys
 import time
 import traceback
 import yaml
-import argparse
 
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.schema import MetaData, Table
 from sqlalchemy.sql import insert, update, delete
 from sqlalchemy.sql import and_
 from sqlalchemy.types import TIMESTAMP
-from sqlalchemy.schema import MetaData, Table
 
 import sqlalchemy_utils
-from sqlalchemy.exc import OperationalError
 
 import collections  # noqa
 
-if (sys.version_info >= (3, 0)):
+if sys.version_info >= (3, 0):
     from http.server import HTTPServer, BaseHTTPRequestHandler  # noqa
 else:
     from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler  # noqa
@@ -166,7 +166,7 @@ class Nodes(declarative_base()):
     # from sqlalchemy.dialects.mysql import INTEGER
 
     # CREATE TABLE `Nodes` (
-    #        id INTEGER NOT NULL AUTO_INCREMENT, #@TODO UNSIGNED
+    #        id INTEGER NOT NULL AUTO_INCREMENT, #@TODO(hamzy) UNSIGNED
     #        name VARCHAR(50),
     #        ipmi_ip VARCHAR(50),
     #        ipmi_user VARCHAR(50),
@@ -254,8 +254,9 @@ class IPs(declarative_base()):
     __tablename__ = 'IPs'
 
     # CREATE TABLE `IPs` (
-    #         id INTEGER NOT NULL AUTO_INCREMENT, #@TODO INTEGER(unsigned=True)
-    #         node_id INTEGER, #@TODO UNSIGNED
+    #         id INTEGER NOT NULL AUTO_INCREMENT, #@TODO(hamzy) \
+    #            INTEGER(unsigned=True)
+    #         node_id INTEGER, #@TODO(hamzy) UNSIGNED
     #         ip VARCHAR(50),
     #         PRIMARY KEY (id),
     #         FOREIGN KEY(node_id) REFERENCES `Nodes` (id)
@@ -293,7 +294,7 @@ TYPE_SQLITE = 3
 TYPE_SQLITE_MEMORY = 4
 
 
-class DataBase():
+class DataBase(object):
     """This class may be used access the molten iron database.  """
 
     def __init__(self,
@@ -546,10 +547,10 @@ class DataBase():
 #                  and ("." in node_id):
 
                 check = isinstance(node_id, str)
-                if (sys.version_info < (3, 0)):
+                if sys.version_info < (3, 0):
                     check = check or isinstance(node_id, unicode)  # noqa
 
-                if (check and ("." in node_id)):
+                if check and ("." in node_id):
                     # If an ipmi_ip was passed
                     query = query.filter_by(ipmi_ip=node_id)
                 else:
@@ -744,11 +745,11 @@ class DataBase():
         return {'status': 200}
 
     def cull(self, maxSeconds):
-        """If any node has been in use for longer than maxSeconds, deallocate
-        that node.
+        """Deallocate old nodes.
 
-        Nodes that are deallocated in this way get their state set to "dirty".
-        They are also scheduled for cleaning.
+        If any node has been in use for longer than maxSeconds, deallocate
+        that node.  Nodes that are deallocated in this way get their state set
+        to "dirty".  They are also scheduled for cleaning.
         """
 
         if DEBUG:
@@ -845,7 +846,7 @@ class DataBase():
 
         return {'status': 200}
 
-    # @TODO shouldn't it return allocation_pool rather than ipmi_ip?
+    # @TODO(hamzy) shouldn't it return allocation_pool rather than ipmi_ip?
     def get_ips(self, owner_name):
         """Return all IPs allocated to a given node owner
 
@@ -953,8 +954,9 @@ class DataBase():
         return {'status': 200}
 
     def setup_status(self):
-        """Setup the status formatting strings depending on skipped elements,
-        lengths, and types.
+        """Setup the status formatting strings.
+
+        Which depends on the skipped elements, lengths, and types.
         """
 
         self.result_separator = "+"
