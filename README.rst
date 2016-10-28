@@ -59,31 +59,31 @@ Configuration of MoltenIron
 
 Configuration of MoltenIron is specified in the file conf.yaml.
 
-"B)" means that this configuration option is required for both the client and
-the server.  "C)" means that it is required only for the client.  "S)" means
-it is only required for the server.
+"Both" means that this configuration option is required for both the client and
+the server.  "Client" means that it is required only for the client.  "Server"
+means it is only required for the server.
 
-+------+------------+----------------------------------------------------------+
-|usage | key        | description                                              |
-+======+============+==========================================================+
-|B)    | mi_port    | the port that the server uses to respond to commands.    |
-+------+------------+----------------------------------------------------------+
-|C)    | serverIP   | The IP address of the server.  This is only used by      |
-|      |            | clients.                                                 |
-+------+------------+----------------------------------------------------------+
-|S)    | maxTime    | The maximum amount of time, in seconds, that a node      |
-|      |            | is allowed to be allocated to a particular BM node.      |
-+------+------------+----------------------------------------------------------+
-|S)    | logdir     | The path to the directory where the logs should be       |
-|      |            | stored.                                                  |
-+------+------------+----------------------------------------------------------+
-|S)    | maxLogDays | The amount of time, in days, to keep old logs.           |
-+------+------------+----------------------------------------------------------+
-|S)    | sqlUser    | The username to use for the MI server.  This user        |
-|      |            | will automatically be generated when createDB.py is run. |
-+------+------------+----------------------------------------------------------+
-|S)    | sqlPass    | The password of sqlUser                                  |
-+------+------------+----------------------------------------------------------+
++-------+------------+----------------------------------------------------------+
+|usage  | key        | description                                              |
++=======+============+==========================================================+
+|Both   | mi_port    | the port that the server uses to respond to commands.    |
++-------+------------+----------------------------------------------------------+
+|Client | serverIP   | The IP address of the server.  This is only used by      |
+|       |            | clients.                                                 |
++-------+------------+----------------------------------------------------------+
+|Server | maxTime    | The maximum amount of time, in seconds, that a node      |
+|       |            | is allowed to be allocated to a particular BM node.      |
++-------+------------+----------------------------------------------------------+
+|Server | logdir     | The path to the directory where the logs should be       |
+|       |            | stored.                                                  |
++-------+------------+----------------------------------------------------------+
+|Server | maxLogDays | The amount of time, in days, to keep old logs.           |
++-------+------------+----------------------------------------------------------+
+|Server | sqlUser    | The username to use for the MI server.  This user        |
+|       |            | will automatically be generated when createDB.py is run. |
++-------+------------+----------------------------------------------------------+
+|Server | sqlPass    | The password of sqlUser                                  |
++-------+------------+----------------------------------------------------------+
 
 Running testcases
 -----------------
