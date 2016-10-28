@@ -102,14 +102,16 @@ During the creation of a job, in the pre_test_hook.sh, add the following snippet
     # Setup MoltenIron and all necessary prerequisites.
     # And then call the MI script to allocate a node.
     (
-      REPO_DIR=/opt/stack/new/third-party-ci-tools
-      MI_CONF_DIR=/usr/local/etc/molteniron/
-      MI_IP=10.1.2.3 # @TODO - Replace with your IP addr here!
+      REPO_DIR=/opt/stack/new/molteniron
+      MI_CONF_DIR=/usr/local/etc/molteniron
+      MI_IP=10.1.2.3     # @TODO - Replace with your IP addr here!
+      MI_SQLUSER=user    # @TODO - Replace with your mysql user here!
+      MI_SQLPASS=passwd  # @TODO - Replace with your mysql password here!
 
       # Grab molteniron and install it
-      git clone https://git.openstack.org/openstack/third-party-ci-tools ${REPO_DIR} || exit 1
+      git clone https://git.openstack.org/openstack/molteniron ${REPO_DIR} || exit 1
 
-      cd ${REPO_DIR}/nodepool/molteniron
+      cd ${REPO_DIR}
 
       # @BUG Install prerequisite before running pip to install the requisites
       hash mysql_config || sudo apt install -y libmysqlclient-dev
@@ -126,9 +128,21 @@ During the creation of a job, in the pre_test_hook.sh, add the following snippet
         sudo sed -i "s/127.0.0.1/${MI_IP}/g" ${MI_CONF_DIR}/conf.yaml
       fi
 
+      if [ -n "${MI_SQLUSER}" ]
+      then
+        # Set the molteniron database user in the conf file
+        sudo sed -r -i -e 's,(^sqlUser: ")([a-zA-Z_]+)("$),\1'${MI_SQLUSER}'\3,' ${MI_CONF_DIR}/conf.yaml
+      fi
+
+      if [ -n "${MI_SQLPASS}" ]
+      then
+        # Set the molteniron database password in the conf file
+        sudo sed -r -i -e 's,(^sqlPass: ")([a-zA-Z_]+)("$),\1'${MI_SQLPASS}'\3,' ${MI_CONF_DIR}/conf.yaml
+      fi
+
       export dsvm_uuid
       # NOTE: dsvm_uuid used in the following script, hence the -E
-      sudo -E ${REPO_DIR}/nodepool/molteniron/utils/test_hook_configure_mi.sh
+      sudo -E ${REPO_DIR}/utils/test_hook_configure_mi.sh
     ) || exit $?
 
 and change the MI_IP environment variable to be your MoltenIron server!
