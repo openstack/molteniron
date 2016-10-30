@@ -3,11 +3,37 @@ MoltenIron overview
 
 MoltenIron maintains a pool of bare metal nodes.
 
-Starting
---------
+Installation
+------------
+
+With a clean installation of an Ununtu system, do the following::
+  ubuntu@hamzy-test:~$ sudo apt-get install -y build-essential python-dev python3-dev libmysqlclient-dev tox python2.7 python3.5 mysql-server
+
+If you see::
+  E: Unable to locate package tox
+
+then remove tox and reinstall.  Next. do the following::
+  ubuntu@molten-iron:~$ sudo pip install --upgrade tox
+
+Next, check out the MoltenIron project::
+  ubuntu@hamzy-test:~$ git clone git://git.openstack.org/openstack/molteniron.git
+  ubuntu@hamzy-test:~$ cd molteniron/
+
+Before you can install the package requirements, you may need to install a prerequisite::
+  ubuntu@molten-iron:~/molteniron$ hash mysql_config || sudo apt install -y libmysqlclient-dev
+
+Then install the package requirements::
+  ubuntu@hamzy-test:~/molteniron$ sudo pip install --upgrade --force-reinstall --requirement requirements.txt
 
 Before starting the server for the first time, the createDB.py
-script must be run.
+script must be run as follows::
+  ubuntu@hamzy-test:~/molteniron$ createDB.py
+
+You can run the suite of testcases to make sure everything works::
+  ubuntu@molten-iron:~/molteniron$ (rm -rf .tox/py27/ testenv/; tox -epy27)
+
+Starting
+--------
 
 To start the server::
 
