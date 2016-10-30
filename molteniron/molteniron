@@ -121,8 +121,9 @@ class MoltenIron(object):
     def add(self, subparsers=None):
         """Generate a request to add a node to the MoltenIron database """
         if subparsers is not None:
-            sp = subparsers.add_parser("add")
-            # description='Add a node to the micli')
+            sp = subparsers.add_parser("add",
+                                       help="Add a node to the MoltenIron"
+                                            " database.")
             sp.add_argument("name",
                             help="Name of the baremetal node")
             sp.add_argument("ipmi_ip",
@@ -170,9 +171,9 @@ class MoltenIron(object):
     def allocate(self, subparsers=None):
         """Generate request to checkout a node from the MoltenIron database """
         if subparsers is not None:
-            sp = subparsers.add_parser("allocate")
-            # description="Checkout a node in molteniron. Returns the node's"
-            #             " info")
+            sp = subparsers.add_parser("allocate",
+                                       help="Checkout a node in MoltenIron."
+                                            " Returns the node's info.")
             sp.add_argument("owner_name",
                             help="Name of the requester")
             sp.add_argument("number_of_nodes",
@@ -197,9 +198,10 @@ class MoltenIron(object):
         database
         """
         if subparsers is not None:
-            sp = subparsers.add_parser("release")
-            # description="Given an owner name, release allocated node,"
-            #             " returning it to the available state")
+            sp = subparsers.add_parser("release",
+                                       help="Given an owner name, release the"
+                                            " allocated node, returning it to"
+                                            " the available state.")
             sp.add_argument("owner_name",
                             help="Name of the owner who"
                                  " currently owns the nodes to be released")
@@ -222,9 +224,10 @@ class MoltenIron(object):
         the MoltenIron database
         """
         if subparsers is not None:
-            sp = subparsers.add_parser("get_field")
-            # description="Given an owner name and the name of a field, get"
-            #             " the value of the field")
+            sp = subparsers.add_parser("get_field",
+                                       help="Given an owner name and the name"
+                                            " of a field, get the value of"
+                                            " the field.")
             sp.add_argument("owner_name",
                             help="Name of the owner who currently"
                                  " owns the nodes to get the field from")
@@ -250,8 +253,9 @@ class MoltenIron(object):
         database
         """
         if subparsers is not None:
-            sp = subparsers.add_parser("set_field")
-            # description="Given an id, set a field with a value")
+            sp = subparsers.add_parser("set_field",
+                                       help="Given an id, set a field with a"
+                                            " value.")
             sp.add_argument("id",
                             help="Id of the entry")
             sp.add_argument("key",
@@ -275,7 +279,10 @@ class MoltenIron(object):
     def status(self, subparsers=None):
         """Return status """
         if subparsers is not None:
-            sp = subparsers.add_parser("status")
+            sp = subparsers.add_parser("status",
+                                       help="Return a list of current"
+                                            " MoltenIron Node database"
+                                            " entries.")
             sp.add_argument("-t",
                             "--type",
                             action="store",
@@ -283,8 +290,6 @@ class MoltenIron(object):
                             default="human",
                             dest="type",
                             help="Either human (the default) or csv")
-            # description="Return a list of current MoltenIron Node database"
-            #             " entries")
             sp.set_defaults(func=self.status)
             return
 
@@ -302,8 +307,9 @@ class MoltenIron(object):
     def delete_db(self, subparsers=None):
         """Delete all database entries"""
         if subparsers is not None:
-            sp = subparsers.add_parser("delete_db")
-            # description="Delete every entry in the MoltenIron Node database")
+            sp = subparsers.add_parser("delete_db",
+                                       help="Delete every entry in the"
+                                            " MoltenIron Node database.")
             sp.set_defaults(func=self.delete_db)
             return
 
