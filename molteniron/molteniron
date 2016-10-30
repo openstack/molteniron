@@ -328,6 +328,15 @@ if __name__ == "__main__":
                         dest="conf_dir",
                         help="The directory where configuration is stored")
 
+    parser.add_argument("-o",
+                        "--output",
+                        action="store",
+                        type=str,
+                        default="json",
+                        dest="output",
+                        help="The output should be json (the default)"
+                             " or result (only the result string)")
+
     subparsers = parser.add_subparsers(help="sub-command help")
 
     # Register all decorated class functions by telling them argparse
@@ -337,6 +346,14 @@ if __name__ == "__main__":
         func(subparsers)  # Tell the function to setup for argparse
 
     args = parser.parse_args()
+
+    output = args.output.upper().lower()
+    if output == "json":
+        pass
+    elif output == "result":
+        pass
+    else:
+        parser.error("Unknown output type %s" % (output, ))
 
     if args.conf_dir:
         if not os.path.isdir(args.conf_dir):
@@ -355,7 +372,13 @@ if __name__ == "__main__":
         mi.setup_argv(args)
         mi.setup_parser(parser)
 
-        print(mi.get_response())
+        ret = mi.get_response()
+        json_ret = json.loads(ret)
+
+        if output == "json":
+            print(json_ret)
+        elif output == "result":
+            print(json_ret["result"])
 
         try:
             rc = mi.get_response_map()['status']
@@ -366,4 +389,4 @@ if __name__ == "__main__":
         if rc == 200:
             exit(0)
         else:
-            exit(1)
+            exit(rc)
