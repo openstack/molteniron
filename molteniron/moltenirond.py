@@ -142,7 +142,7 @@ def MakeMoltenIronHandlerWithConf(conf):
                                                   request['key'],
                                                   request['value'])
                 elif method == 'status':
-                    response = database.status()
+                    response = database.status(request["type"])
                 elif method == 'delete_db':
                     response = database.delete_db()
                 database.close()
@@ -988,12 +988,91 @@ class DataBase(object):
                                     % (index, length, length - 2)
             index += 1
 
-    def status(self):
+        index = 0
+        self.format_line_csv = ""
+        for (_, length, special_fmt, skip) in self.element_info:
+            if skip:
+                continue
+            if special_fmt is int:
+                self.format_line_csv += "{%d}," % (index, )
+            elif special_fmt is str:
+                self.format_line_csv += "{%d}," % (index, )
+            elif special_fmt is float:
+                self.format_line_csv += "{%d}," % (index, )
+            index += 1
+
+    def status(self, output_type):
         """Return a table that details the state of each bare metal node.
 
         Currently this table is being created manually, there is probably a
         better way to be doing this.
         """
+
+        output_type = output_type.upper().lower()
+
+        if output_type == "csv":
+            return self.status_csv()
+        elif output_type == "human":
+            return self.status_full()
+        else:
+            return {'status': 400,
+                    'message': "Unknown --type=%s" % (output_type, )}
+
+    def status_csv(self):
+        """Return a comma separated list of values"""
+
+        result = ""
+
+        try:
+            with self.session_scope() as session:
+
+                query = session.query(Nodes)
+
+                for node in query:
+
+                    timeString = ""
+                    try:
+                        if node.timestamp is not None:
+                            elapsedTime = datetime.utcnow() - node.timestamp
+                            timeString = str(elapsedTime)
+                    except Exception:
+                        pass
+
+                    elements = (node.id,
+                                node.name,
+                                node.ipmi_ip,
+                                node.ipmi_user,
+                                node.ipmi_password,
+                                node.port_hwaddr,
+                                node.cpu_arch,
+                                node.cpus,
+                                node.ram_mb,
+                                node.disk_gb,
+                                node.status,
+                                node.provisioned,
+                                timeString)
+
+                    new_elements = []
+                    index = 0
+                    for (_, _, _, skip) in self.element_info:
+                        if not skip:
+                            new_elements.append(elements[index])
+                        index += 1
+
+                    result += self.format_line_csv.format(*new_elements) + "\n"
+
+        except Exception as e:
+
+            if DEBUG:
+                print("Exception caught in status: %s" % (e,))
+
+            # Don't send the exception object as it is not json serializable!
+            return {'status': 400, 'message': str(e)}
+
+        return {'status': 200, 'result': result}
+
+    def status_full(self):
+        """Return an ASCII table of the database entries"""
 
         result = ""
 

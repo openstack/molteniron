@@ -276,6 +276,13 @@ class MoltenIron(object):
         """Return status """
         if subparsers is not None:
             sp = subparsers.add_parser("status")
+            sp.add_argument("-t",
+                            "--type",
+                            action="store",
+                            type=str,
+                            default="human",
+                            dest="type",
+                            help="Either human (the default) or csv")
             # description="Return a list of current MoltenIron Node database"
             #             " entries")
             sp.set_defaults(func=self.status)
