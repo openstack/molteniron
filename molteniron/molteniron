@@ -382,7 +382,8 @@ if __name__ == "__main__":
         json_ret = json.loads(ret)
 
         if output == "json":
-            print(json_ret)
+            # Print the already JSON encoded reply sent from the server
+            print(ret)
         elif output == "result":
             print(json_ret["result"])
 
