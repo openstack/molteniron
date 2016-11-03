@@ -24,6 +24,7 @@ Tests the MoltenIron cull command.
 from __future__ import print_function
 
 import argparse
+import json
 from molteniron import moltenirond
 import os
 import sys
@@ -31,16 +32,42 @@ import time
 import yaml
 
 
-def compare_culled_nodes(lhs, rhs):
+def result_to_r(res):
+    """Takes a result and returns the request parameters."""
+
+    r = res.copy()
+    del r["blob"]
+    return r
+
+
+def result_to_n(res):
+    """Takes a result and returns the node parameters."""
+
+    n = {}
+    if "blob" in res:
+        blob = json.loads(res["blob"])
+        n["ipmi_user"] = blob["ipmi_user"]
+        n["ipmi_password"] = blob["ipmi_password"]
+        n["port_hwaddr"] = blob["port_hwaddr"]
+        n["cpu_arch"] = blob["cpu_arch"]
+        n["cpus"] = blob["cpus"]
+        n["ram_mb"] = blob["ram_mb"]
+        n["disk_gb"] = blob["disk_gb"]
+    return n
+
+
+def compare_culled_nodes(lhs, rhs_r, rhs_n):
     """Specially compares lhs against rhs."""
-    lhs = lhs.copy()
-    rhs = rhs.copy()
-    del rhs['allocation_pool']
+    rhs_r = rhs_r.copy()
+    lhs_r = result_to_r(lhs)
+    lhs_n = result_to_n(lhs)
+    del rhs_r['allocation_pool']
     # timestamp can be converted on the server
-    del lhs['timestamp']
-    del rhs['timestamp']
-    del lhs['id']
-    assert lhs == rhs
+    del lhs_r['timestamp']
+    del rhs_r['timestamp']
+    del lhs_r['id']
+    assert lhs_r == rhs_r
+    assert lhs_n == rhs_n
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Molteniron CLI tool")
@@ -66,80 +93,87 @@ if __name__ == "__main__":
     with open(yaml_file, "r") as fobj:
         conf = yaml.load(fobj)
 
-    node1 = {
+    request1 = {
         "name": "pkvmci816",
         "ipmi_ip": "10.228.219.134",
-        "ipmi_user": "user",
-        "ipmi_password": "34118fd3509621ba",
-        "port_hwaddr": "ff: 2c: e1:cc:8e:7c",
-        "cpu_arch": "ppc64el",
-        "cpus": 20,
-        "ram_mb": 51000,
-        "disk_gb": 500,
         "status": "ready",
         "provisioned": "",
         "timestamp": "",
         "allocation_pool": "10.228.112.10,10.228.112.11"
     }
-    node2 = {
-        "name": "pkvmci818",
-        "ipmi_ip": "10.228.219.133",
+    node1 = {
         "ipmi_user": "user",
-        "ipmi_password": "fa2125690a95b43c",
-        "port_hwaddr": "f6: 58:13:02:64:59",
+        "ipmi_password": "e05cc5f061426e34",
+        "port_hwaddr": "f8:de:29:33:a4:ed",
         "cpu_arch": "ppc64el",
         "cpus": 20,
         "ram_mb": 51000,
-        "disk_gb": 500,
+        "disk_gb": 500
+    }
+    request2 = {
+        "name": "pkvmci818",
+        "ipmi_ip": "10.228.219.133",
         "status": "ready",
         "provisioned": "",
         "timestamp": "-1",
         "allocation_pool": "10.228.112.8,10.228.112.9"
     }
-    node3 = {
-        "name": "pkvmci851",
-        "ipmi_ip": "10.228.118.129",
+    node2 = {
         "ipmi_user": "user",
-        "ipmi_password": "3aee014d56425a6c",
-        "port_hwaddr": "6e: d4:a5:ae: 13:55",
+        "ipmi_password": "0614d63b6635ea3d",
+        "port_hwaddr": "4c:c5:da:28:2c:2d",
         "cpu_arch": "ppc64el",
         "cpus": 20,
         "ram_mb": 51000,
-        "disk_gb": 500,
+        "disk_gb": 500
+    }
+    request3 = {
+        "name": "pkvmci851",
+        "ipmi_ip": "10.228.118.129",
         "status": "used",
         "provisioned": "7a72eccd-3153-4d08-9848-c6d3b1f18f9f",
-        # NOTE: time() can return fractional values. Ex: 1460560140.47
         "timestamp": str(time.time() - 1000.0),
         "allocation_pool": "10.228.112.12,10.228.112.13"
     }
-    node4 = {
-        "name": "pkvmci853",
-        "ipmi_ip": "10.228.118.133",
+    node3 = {
         "ipmi_user": "user",
-        "ipmi_password": "254dd9fb34ddcac7",
-        "port_hwaddr": "a0: c9: 22:23:22:9d",
+        "ipmi_password": "928b056134e4d770",
+        "port_hwaddr": "53:76:c6:09:50:64",
         "cpu_arch": "ppc64el",
         "cpus": 20,
         "ram_mb": 51000,
-        "disk_gb": 500,
+        "disk_gb": 500
+    }
+    request4 = {
+        "name": "pkvmci853",
+        "ipmi_ip": "10.228.118.133",
         "status": "used",
         "provisioned": "6b8823ef-3e14-4811-98b9-32e27397540d",
         "timestamp": str(time.time() - 2000.0),
         "allocation_pool": "10.228.112.14,10.228.112.15"
     }
+    node4 = {
+        "ipmi_user": "user",
+        "ipmi_password": "33f448a4fc176492",
+        "port_hwaddr": "85:e0:73:e9:fc:ca",
+        "cpu_arch": "ppc64el",
+        "cpus": 20,
+        "ram_mb": 51000,
+        "disk_gb": 500
+    }
 
     # 8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----
     database = moltenirond.DataBase(conf, moltenirond.TYPE_SQLITE_MEMORY)
-    ret = database.addBMNode(node1)
+    ret = database.addBMNode(request1, node1)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node2)
+    ret = database.addBMNode(request2, node2)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node3)
+    ret = database.addBMNode(request3, node3)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node4)
+    ret = database.addBMNode(request4, node4)
     print(ret)
     assert ret == {'status': 200}
 
@@ -148,8 +182,8 @@ if __name__ == "__main__":
     assert ret['status'] == 200
     assert len(ret['nodes']) == 2
 
-    compare_culled_nodes(ret['nodes']['node_3'], node3)
-    compare_culled_nodes(ret['nodes']['node_4'], node4)
+    compare_culled_nodes(ret['nodes']['node_3'], request3, node3)
+    compare_culled_nodes(ret['nodes']['node_4'], request4, node4)
 
     database.close()
     del database
@@ -161,16 +195,16 @@ if __name__ == "__main__":
     del database
 
     database = moltenirond.DataBase(conf, moltenirond.TYPE_SQLITE_MEMORY)
-    ret = database.addBMNode(node1)
+    ret = database.addBMNode(request1, node1)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node2)
+    ret = database.addBMNode(request2, node2)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node3)
+    ret = database.addBMNode(request3, node3)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node4)
+    ret = database.addBMNode(request4, node4)
     print(ret)
     assert ret == {'status': 200}
 
@@ -179,7 +213,7 @@ if __name__ == "__main__":
     assert ret['status'] == 200
     assert len(ret['nodes']) == 1
 
-    compare_culled_nodes(ret['nodes']['node_4'], node4)
+    compare_culled_nodes(ret['nodes']['node_4'], request4, node4)
 
     database.close()
     del database
@@ -191,16 +225,16 @@ if __name__ == "__main__":
     del database
 
     database = moltenirond.DataBase(conf, moltenirond.TYPE_SQLITE_MEMORY)
-    ret = database.addBMNode(node1)
+    ret = database.addBMNode(request1, node1)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node2)
+    ret = database.addBMNode(request2, node2)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node3)
+    ret = database.addBMNode(request3, node3)
     print(ret)
     assert ret == {'status': 200}
-    ret = database.addBMNode(node4)
+    ret = database.addBMNode(request4, node4)
     print(ret)
     assert ret == {'status': 200}
 

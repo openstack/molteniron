@@ -118,10 +118,12 @@ class MoltenIron(object):
         return self.response_json
 
     @command
-    def add(self, subparsers=None):
-        """Generate a request to add a node to the MoltenIron database """
+    def add_baremetal(self, subparsers=None):
+        """Generate a request to add a node to the MoltenIron database.
+
+           All parameters are manditory."""
         if subparsers is not None:
-            sp = subparsers.add_parser("add",
+            sp = subparsers.add_parser("add_baremetal",
                                        help="Add a node to the MoltenIron"
                                             " database.")
             sp.add_argument("name",
@@ -154,7 +156,7 @@ class MoltenIron(object):
                             type=int,
                             help="Amount of disk (in GiB)"
                                  " that the node has")
-            sp.set_defaults(func=self.add)
+            sp.set_defaults(func=self.add_baremetal)
             return
 
         # Make a map of our arguments
@@ -163,7 +165,72 @@ class MoltenIron(object):
         # But delete the class function pointer. json can't serialize it!
         del request['func']
 
-        request['method'] = 'add'
+        request['method'] = 'add_baremetal'
+
+        return request
+
+    @command
+    def add_keyvalue_pairs(self, subparsers=None):
+        """Generate a request to add a node to the MoltenIron database.
+
+           args are a list of key=value pairs."""
+        if subparsers is not None:
+            sp = subparsers.add_parser("add_keyvalue_pairs",
+                                       help="Add a node to the MoltenIron"
+                                            " database.")
+            sp.add_argument("name",
+                            help="Name of the baremetal node")
+            sp.add_argument("ipmi_ip",
+                            help="IP for issuing IPMI commands to"
+                                 " this node")
+            sp.add_argument("allocation_pool",
+                            help="Comma separated list of"
+                                 " IPs to be used in deployment")
+            sp.add_argument("args",
+                            nargs=argparse.REMAINDER,
+                            help="Architecture of the node")
+            sp.set_defaults(func=self.add_keyvalue_pairs)
+            return
+
+        # Make a map of our arguments
+        request = vars(self.argv)
+
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
+        request['method'] = 'add_keyvalue_pairs'
+
+        return request
+
+    @command
+    def add_json_blob(self, subparsers=None):
+        """Generate a request to add a node to the MoltenIron database.
+
+           blob is a JSON encoded string."""
+        if subparsers is not None:
+            sp = subparsers.add_parser("add_json_blob",
+                                       help="Add a node to the MoltenIron"
+                                            " database.")
+            sp.add_argument("name",
+                            help="Name of the baremetal node")
+            sp.add_argument("ipmi_ip",
+                            help="IP for issuing IPMI commands to"
+                                 " this node")
+            sp.add_argument("allocation_pool",
+                            help="Comma separated list of"
+                                 " IPs to be used in deployment")
+            sp.add_argument("blob",
+                            help="JSON encoded string")
+            sp.set_defaults(func=self.add_json_blob)
+            return
+
+        # Make a map of our arguments
+        request = vars(self.argv)
+
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
+        request['method'] = 'add_json_blob'
 
         return request
 
@@ -262,6 +329,8 @@ class MoltenIron(object):
                             help="Field name to set")
             sp.add_argument("value",
                             help="Field value to set")
+            sp.add_argument("type",
+                            help="Field Python type to set")
             sp.set_defaults(func=self.set_field)
             return
 
@@ -300,6 +369,34 @@ class MoltenIron(object):
         del request['func']
 
         request['method'] = 'status'
+
+        return request
+
+    @command
+    def status_baremetal(self, subparsers=None):
+        """Return status """
+        if subparsers is not None:
+            sp = subparsers.add_parser("status_baremetal",
+                                       help="Return a list of current"
+                                            " MoltenIron Node database"
+                                            " entries.")
+            sp.add_argument("-t",
+                            "--type",
+                            action="store",
+                            type=str,
+                            default="human",
+                            dest="type",
+                            help="Either human (the default) or csv")
+            sp.set_defaults(func=self.status_baremetal)
+            return
+
+        # Make a map of our arguments
+        request = vars(self.argv)
+
+        # But delete the class function pointer. json can't serialize it!
+        del request['func']
+
+        request['method'] = 'status_baremetal'
 
         return request
 

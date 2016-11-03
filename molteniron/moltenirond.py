@@ -127,8 +127,27 @@ def MakeMoltenIronHandlerWithConf(conf):
                 # Try to json-ify the request_string
                 request = json.loads(request_string)
                 method = request.pop('method')
-                if method == 'add':
-                    response = database.addBMNode(request)
+                if method == 'add_baremetal':
+                    node = {}
+                    node['ipmi_user'] = request.pop('ipmi_user')
+                    node['ipmi_password'] = request.pop('ipmi_password')
+                    node['port_hwaddr'] = request.pop('port_hwaddr')
+                    node['disk_gb'] = request.pop('disk_gb')
+                    node['cpu_arch'] = request.pop('cpu_arch')
+                    node['ram_mb'] = request.pop('ram_mb')
+                    node['cpus'] = request.pop('cpus')
+                    response = database.addBMNode(request, node)
+                elif method == 'add_keyvalue_pairs':
+                    node = {}
+
+                    for elm in request["args"]:
+                        idx = elm.find("=")
+                        if idx > -1:
+                            node[elm[:idx]] = elm[idx + 1:]
+                    response = database.addBMNode(request, node)
+                elif method == 'add_json_blob':
+                    node = json.loads(request.pop("blob"))
+                    response = database.addBMNode(request, node)
                 elif method == 'allocate':
                     response = database.allocateBM(request['owner_name'],
                                                    request['number_of_nodes'])
@@ -140,9 +159,12 @@ def MakeMoltenIronHandlerWithConf(conf):
                 elif method == 'set_field':
                     response = database.set_field(request['id'],
                                                   request['key'],
-                                                  request['value'])
+                                                  request['value'],
+                                                  request['type'])
                 elif method == 'status':
                     response = database.status(request["type"])
+                elif method == 'status_baremetal':
+                    response = database.status_baremetal(request["type"])
                 elif method == 'delete_db':
                     response = database.delete_db()
                 database.close()
@@ -169,13 +191,7 @@ class Nodes(declarative_base()):
     #        id INTEGER NOT NULL AUTO_INCREMENT, #@TODO(hamzy) UNSIGNED
     #        name VARCHAR(50),
     #        ipmi_ip VARCHAR(50),
-    #        ipmi_user VARCHAR(50),
-    #        ipmi_password VARCHAR(50),
-    #        port_hwaddr VARCHAR(50),
-    #        cpu_arch VARCHAR(50),
-    #        cpus INTEGER,
-    #        ram_mb INTEGER,
-    #        disk_gb INTEGER,
+    #        blob VARCHAR(2000),
     #        status VARCHAR(20),
     #        provisioned VARCHAR(50),
     #        timestamp TIMESTAMP NULL,
@@ -185,13 +201,7 @@ class Nodes(declarative_base()):
     id = Column('id', Integer, primary_key=True)
     name = Column('name', String(50))
     ipmi_ip = Column('ipmi_ip', String(50))
-    ipmi_user = Column('ipmi_user', String(50))
-    ipmi_password = Column('ipmi_password', String(50))
-    port_hwaddr = Column('port_hwaddr', String(50))
-    cpu_arch = Column('cpu_arch', String(50))
-    cpus = Column('cpus', Integer)
-    ram_mb = Column('ram_mb', Integer)
-    disk_gb = Column('disk_gb', Integer)
+    blob = Column('blob', String(2000))
     status = Column('status', String(20))
     provisioned = Column('provisioned', String(50))
     timestamp = Column('timestamp', TIMESTAMP)
@@ -201,13 +211,7 @@ class Nodes(declarative_base()):
                       id,
                       name,
                       ipmi_ip,
-                      ipmi_user,
-                      ipmi_password,
-                      port_hwaddr,
-                      cpu_arch,
-                      cpus,
-                      ram_mb,
-                      disk_gb,
+                      blob,
                       status,
                       provisioned,
                       timestamp)
@@ -222,13 +226,7 @@ class Nodes(declarative_base()):
     def __repr__(self):
         fmt = """<Node(name='%s',
 ipmi_ip='%s',
-ipmi_user='%s',
-ipmi_password='%s',
-port='%s',
-cpu_arch='%s',
-cpus='%d',
-ram='%d',
-disk='%d',
+blob='%s',
 status='%s',
 provisioned='%s',
 timestamp='%s'/>"""
@@ -236,13 +234,7 @@ timestamp='%s'/>"""
 
         return fmt % (self.name,
                       self.ipmi_ip,
-                      self.ipmi_user,
-                      self.ipmi_password,
-                      self.port_hwaddr,
-                      self.cpu_arch,
-                      self.cpus,
-                      self.ram_mb,
-                      self.disk_gb,
+                      self.blob,
                       self.status,
                       self.provisioned,
                       self.timestamp)
@@ -323,26 +315,45 @@ class DataBase(object):
 
         self.create_metadata()
 
-        self.element_info = [
-            # The following are returned from the query call
+        self.blob_status = {
+            "element_info": [
+                # The following are returned from the query call
 
-            # field_name length special_fmt skip
-            ("id", 4, int, False),
-            ("name", 6, str, False),
-            ("ipmi_ip", 9, str, False),
-            ("ipmi_user", 11, str, False),
-            ("ipmi_password", 15, str, False),
-            ("port_hwaddr", 19, str, False),
-            ("cpu_arch", 10, str, False),
-            ("cpus", 6, int, False),
-            ("ram_mb", 8, int, False),
-            ("disk_gb", 9, int, False),
-            ("status", 8, str, False),
-            ("provisioned", 13, str, False),
-            # We add timeString
-            ("time", 14, float, False),
-        ]
-        self.setup_status()
+                # field_name length special_fmt skip
+                ("id", 4, int, False),
+                ("name", 6, str, False),
+                ("blob", 40, str, False),
+                ("status", 8, str, False),
+                ("provisioned", 13, str, False),
+                # We add timeString
+                ("time", 14, float, False),
+            ]
+        }
+        self.baremetal_status = {
+            "element_info": [
+                # The following are returned from the query call
+
+                # field_name length special_fmt skip
+                ("id", 4, int, False),
+                ("name", 6, str, False),
+                ("ipmi_ip", 9, str, False),
+                ("ipmi_user", 11, str, False),
+                ("ipmi_password", 15, str, False),
+                ("port_hwaddr", 19, str, False),
+                ("cpu_arch", 10, str, False),
+                ("cpus", 6, int, False),
+                ("ram_mb", 8, int, False),
+                ("disk_gb", 9, int, False),
+                ("status", 8, str, False),
+                ("provisioned", 13, str, False),
+                # We add timeString
+                ("time", 14, float, False),
+            ]
+        }
+
+        # Pass map by reference but update our copy with the new information
+        self.baremetal_status = self.setup_status(**self.baremetal_status)
+        self.blob_status = self.setup_status(**self.blob_status)
 
     def create_engine(self):
         """Create the sqlalchemy database engine"""
@@ -602,59 +613,57 @@ class DataBase(object):
 
         return {'status': 200}
 
-    def addBMNode(self, node):
+    def addBMNode(self, request, data_map):
         """Add a new node to molten iron.
 
         ex:
-        node = {u'name': u'test',
-                u'ipmi_user': u'user',
-                u'port_hwaddr': u'de:ad:be:ef:00:01',
-                u'disk_gb': 32,
-                u'cpu_arch': u'ppc64el',
-                u'ram_mb': 2048,
-                u'cpus': 8,
-                u'allocation_pool': u'0.0.0.1,0.0.0.2',
-                u'ipmi_password': u'password',
-                u'ipmi_ip': u'0.0.0.0'}
+        request = {u'name': u'test',
+                   u'ipmi_ip': u'0.0.0.0',
+                   u'status': u'',
+                   u'provisioned': u'',
+                   u'timestamp': u'',
+                   u'allocation_pool': u'0.0.0.1,0.0.0.2'}
+        data_map = {u'ipmi_user': u'user',
+                    u'ipmi_password': u'password',
+                    u'port_hwaddr': u'de:ad:be:ef:00:01',
+                    u'disk_gb': 32,
+                    u'cpu_arch': u'ppc64el',
+                    u'ram_mb': 2048,
+                    u'cpus': 8}
         """
 
         try:
             if DEBUG:
-                print("addBMNode: node = %s" % (node, ))
+                print("addBMNode: request = %s data_map = %s"
+                      % (request, data_map, ))
 
             with self.session_scope() as session, \
                     self.connection_scope() as conn:
 
                 # Check if it already exists
                 query = session.query(Nodes)
-                query = query.filter_by(name=node['name'])
+                query = query.filter_by(name=request['name'])
                 count = query.count()
 
                 if count == 1:
                     return {'status': 400, 'message': "Node already exists"}
 
                 log(self.conf,
-                    "adding node %(name)s ipmi_ip: %(ipmi_ip)s" % node)
+                    "adding node %(name)s ipmi_ip: %(ipmi_ip)s" % request)
 
                 # Add Node to database
                 # Note: ID is always 0 as it is an auto-incrementing field
                 stmt = insert(Nodes)
-                stmt = stmt.values(name=node['name'])
-                stmt = stmt.values(ipmi_ip=node['ipmi_ip'])
-                stmt = stmt.values(ipmi_user=node['ipmi_user'])
-                stmt = stmt.values(ipmi_password=node['ipmi_password'])
-                stmt = stmt.values(port_hwaddr=node['port_hwaddr'])
-                stmt = stmt.values(cpu_arch=node['cpu_arch'])
-                stmt = stmt.values(cpus=node['cpus'])
-                stmt = stmt.values(ram_mb=node['ram_mb'])
-                stmt = stmt.values(disk_gb=node['disk_gb'])
+                stmt = stmt.values(name=request['name'])
+                stmt = stmt.values(ipmi_ip=request['ipmi_ip'])
+                stmt = stmt.values(blob=json.dumps(data_map))
                 stmt = stmt.values(status='ready')
-                if 'status' in node:
-                    stmt = stmt.values(status=node['status'])
-                if 'provisioned' in node:
-                    stmt = stmt.values(provisioned=node['provisioned'])
-                if 'timestamp' in node:
-                    timestamp_str = node['timestamp']
+                if 'status' in request:
+                    stmt = stmt.values(status=request['status'])
+                if 'provisioned' in request:
+                    stmt = stmt.values(provisioned=request['provisioned'])
+                if 'timestamp' in request:
+                    timestamp_str = request['timestamp']
                     if DEBUG:
                         print("timestamp_str = %s" % (timestamp_str, ))
                     if len(timestamp_str) != 0 and timestamp_str != "-1":
@@ -672,14 +681,14 @@ class DataBase(object):
                 session.close()
                 session = self.get_session()
 
-                query = session.query(Nodes).filter_by(name=node['name'])
+                query = session.query(Nodes).filter_by(name=request['name'])
                 new_node = query.one()
 
                 # new_node is now a proper Node with an id
 
                 # Add IPs to database
                 # Note: id is always 0 as it is an auto-incrementing field
-                ips = node['allocation_pool'].split(',')
+                ips = request['allocation_pool'].split(',')
                 for ip in ips:
                     stmt = insert(IPs)
                     stmt = stmt.values(node_id=new_node.id, ip=ip)
@@ -877,10 +886,6 @@ class DataBase(object):
     def get_field(self, owner_name, field):
         """Return entries list with id, field for a given owner, field.  """
 
-        if not hasattr(Nodes, field):
-            return {'status': 400,
-                    'message': 'field %s does not exist' % (field,)}
-
         results = []
 
         try:
@@ -900,7 +905,16 @@ class DataBase(object):
 
                 for node in nodes:
                     result = {'id': node.id}
-                    result['field'] = getattr(node, field)
+
+                    try:
+                        result["field"] = getattr(node, field)
+                    except AttributeError:
+                        blob = json.loads(node.blob)
+                        if field in blob:
+                            result["field"] = blob[field]
+                        else:
+                            msg = "field %s does not exist" % (field, )
+                            return {'status': 400, 'message': msg}
 
                     results.append(result)
 
@@ -914,16 +928,21 @@ class DataBase(object):
 
         return {'status': 200, 'result': results}
 
-    def set_field(self, node_id, key, value):
+    def set_field(self, node_id, key, value, python_type):
         """Given an identifying id, set specified key to the passed value. """
-
-        if not hasattr(Nodes, key):
-            return {'status': 400,
-                    'message': 'field %s does not exist' % (key,)}
 
         try:
             with self.session_scope() as session, \
                     self.connection_scope() as conn:
+
+                if python_type.upper().lower() == "string":
+                    pass
+                elif python_type.upper().lower() == "int":
+                    value = int(value)
+                else:
+                    return {'status': 400,
+                            'message': 'Python type of %s is not supported!'
+                                       % (python_type, )}
 
                 query = session.query(Nodes)
                 nodes = query.filter_by(id=node_id)
@@ -931,11 +950,20 @@ class DataBase(object):
                 if nodes.count() == 0:
                     return {'status': 404,
                             'message': 'Node with id of %s does not exist!'
-                                       % node_id}
+                                       % (node_id, )}
 
-                nodes.one()
+                node = nodes.one()
 
-                kv = {key: value}
+                if hasattr(Nodes, key):
+                    kv = {key: value}
+                else:
+                    blob = json.loads(node.blob)
+                    if key in blob:
+                        blob[key] = value
+                        kv = {"blob": json.dumps(blob)}
+                    else:
+                        return {'status': 400,
+                                'message': 'field %s does not exist' % (key,)}
 
                 stmt = update(Nodes)
                 stmt = stmt.where(Nodes.id == node_id)
@@ -953,53 +981,62 @@ class DataBase(object):
 
         return {'status': 200}
 
-    def setup_status(self):
+    def setup_status(self, **status_map):
         """Setup the status formatting strings.
 
         Which depends on the skipped elements, lengths, and types.
         """
 
-        self.result_separator = "+"
-        for (_, length, _, skip) in self.element_info:
-            if skip:
-                continue
-            self.result_separator += '-' * (1 + length + 1) + "+"
+        ei = status_map["element_info"]
 
-        self.description_line = "+"
-        for (field, length, _, skip) in self.element_info:
+        rs = "+"
+        for (_, length, _, skip) in ei:
             if skip:
                 continue
-            self.description_line += (" " +
-                                      field +
-                                      ' ' * (length - len(field)) +
-                                      " +")
+            rs += '-' * (1 + length + 1) + "+"
+
+        dl = "+"
+        for (field, length, _, skip) in ei:
+            if skip:
+                continue
+            dl += (" " +
+                   field +
+                   ' ' * (length - len(field)) +
+                   " +")
 
         index = 0
-        self.format_line = "|"
-        for (_, length, special_fmt, skip) in self.element_info:
+        fl = "|"
+        for (_, length, special_fmt, skip) in ei:
             if skip:
                 continue
             if special_fmt is int:
-                self.format_line += " {%d:<%d} |" % (index, length)
+                fl += " {%d:<%d} |" % (index, length)
             elif special_fmt is str:
-                self.format_line += " {%d:%d} |" % (index, length)
+                fl += " {%d:%d} |" % (index, length)
             elif special_fmt is float:
-                self.format_line += " {%d:<%d.%d} |" \
-                                    % (index, length, length - 2)
+                fl += " {%d:<%d.%d} |" \
+                      % (index, length, length - 2)
             index += 1
 
         index = 0
-        self.format_line_csv = ""
-        for (_, length, special_fmt, skip) in self.element_info:
+        flc = ""
+        for (_, length, special_fmt, skip) in ei:
             if skip:
                 continue
             if special_fmt is int:
-                self.format_line_csv += "{%d}," % (index, )
+                flc += "{%d}," % (index, )
             elif special_fmt is str:
-                self.format_line_csv += "{%d}," % (index, )
+                flc += "{%d}," % (index, )
             elif special_fmt is float:
-                self.format_line_csv += "{%d}," % (index, )
+                flc += "{%d}," % (index, )
             index += 1
+
+        status_map["result_separator"] = rs
+        status_map["description_line"] = dl
+        status_map["format_line"] = fl
+        status_map["format_line_csv"] = flc
+
+        return status_map
 
     def status(self, output_type):
         """Return a table that details the state of each bare metal node.
@@ -1011,17 +1048,71 @@ class DataBase(object):
         output_type = output_type.upper().lower()
 
         if output_type == "csv":
-            return self.status_csv()
+            return self.status_csv(self.blob_status_elements,
+                                   **self.blob_status)
         elif output_type == "human":
-            return self.status_full()
+            return self.status_full(self.blob_status_elements,
+                                    **self.blob_status)
         else:
             return {'status': 400,
                     'message': "Unknown --type=%s" % (output_type, )}
 
-    def status_csv(self):
+    def status_baremetal(self, output_type):
+        """Return a table that details the state of each bare metal node.
+
+        Currently this table is being created manually, there is probably a
+        better way to be doing this.
+        """
+
+        output_type = output_type.upper().lower()
+
+        if output_type == "csv":
+            return self.status_csv(self.baremetal_status_elements,
+                                   **self.baremetal_status)
+        elif output_type == "human":
+            return self.status_full(self.baremetal_status_elements,
+                                    **self.baremetal_status)
+        else:
+            return {'status': 400,
+                    'message': "Unknown --type=%s" % (output_type, )}
+
+    def blob_status_elements(self, node, timeString):
+
+        blob = json.loads(node.blob)
+
+        return (node.id,
+                node.name,
+                node.ipmi_ip,
+                blob,
+                node.status,
+                node.provisioned,
+                timeString)
+
+    def baremetal_status_elements(self, node, timeString):
+
+        blob = json.loads(node.blob)
+
+        return (node.id,
+                node.name,
+                node.ipmi_ip,
+                blob["ipmi_user"],
+                blob["ipmi_password"],
+                blob["port_hwaddr"],
+                blob["cpu_arch"],
+                blob["cpus"],
+                blob["ram_mb"],
+                blob["disk_gb"],
+                node.status,
+                node.provisioned,
+                timeString)
+
+    def status_csv(self, get_status_elements, **status_map):
         """Return a comma separated list of values"""
 
         result = ""
+
+        ei = status_map["element_info"]
+        flc = status_map["format_line_csv"]
 
         try:
             with self.session_scope() as session:
@@ -1030,36 +1121,30 @@ class DataBase(object):
 
                 for node in query:
 
-                    timeString = ""
                     try:
-                        if node.timestamp is not None:
-                            elapsedTime = datetime.utcnow() - node.timestamp
-                            timeString = str(elapsedTime)
-                    except Exception:
-                        pass
 
-                    elements = (node.id,
-                                node.name,
-                                node.ipmi_ip,
-                                node.ipmi_user,
-                                node.ipmi_password,
-                                node.port_hwaddr,
-                                node.cpu_arch,
-                                node.cpus,
-                                node.ram_mb,
-                                node.disk_gb,
-                                node.status,
-                                node.provisioned,
-                                timeString)
+                        timeString = ""
+                        try:
+                            if node.timestamp is not None:
+                                et = datetime.utcnow() - node.timestamp
+                                timeString = str(et)
+                        except Exception:
+                            pass
 
-                    new_elements = []
-                    index = 0
-                    for (_, _, _, skip) in self.element_info:
-                        if not skip:
-                            new_elements.append(elements[index])
-                        index += 1
+                        elements = get_status_elements(node, timeString)
 
-                    result += self.format_line_csv.format(*new_elements) + "\n"
+                        new_elements = []
+                        index = 0
+                        for (_, _, _, skip) in ei:
+                            if not skip:
+                                new_elements.append(elements[index])
+                            index += 1
+
+                        result += flc.format(*new_elements) + "\n"
+
+                    except KeyError:
+
+                        result += "blob missing baremetal fields\n"
 
         except Exception as e:
 
@@ -1071,54 +1156,53 @@ class DataBase(object):
 
         return {'status': 200, 'result': result}
 
-    def status_full(self):
+    def status_full(self, get_status_elements, **status_map):
         """Return an ASCII table of the database entries"""
 
         result = ""
+
+        ei = status_map["element_info"]
+        rs = status_map["result_separator"]
+        dl = status_map["description_line"]
+        fl = status_map["format_line"]
 
         try:
             with self.session_scope() as session:
 
                 query = session.query(Nodes)
 
-                result += self.result_separator + "\n"
-                result += self.description_line + "\n"
-                result += self.result_separator + "\n"
+                result += rs + "\n"
+                result += dl + "\n"
+                result += rs + "\n"
 
                 for node in query:
 
-                    timeString = ""
                     try:
-                        if node.timestamp is not None:
-                            elapsedTime = datetime.utcnow() - node.timestamp
-                            timeString = str(elapsedTime)
-                    except Exception:
-                        pass
 
-                    elements = (node.id,
-                                node.name,
-                                node.ipmi_ip,
-                                node.ipmi_user,
-                                node.ipmi_password,
-                                node.port_hwaddr,
-                                node.cpu_arch,
-                                node.cpus,
-                                node.ram_mb,
-                                node.disk_gb,
-                                node.status,
-                                node.provisioned,
-                                timeString)
+                        timeString = ""
+                        try:
+                            if node.timestamp is not None:
+                                et = datetime.utcnow() - node.timestamp
+                                timeString = str(et)
+                        except Exception:
+                            pass
 
-                    new_elements = []
-                    index = 0
-                    for (_, _, _, skip) in self.element_info:
-                        if not skip:
-                            new_elements.append(elements[index])
-                        index += 1
+                        elements = get_status_elements(node, timeString)
 
-                    result += self.format_line.format(*new_elements) + "\n"
+                        new_elements = []
+                        index = 0
+                        for (_, _, _, skip) in ei:
+                            if not skip:
+                                new_elements.append(elements[index])
+                            index += 1
 
-                result += self.result_separator + "\n"
+                        result += fl.format(*new_elements) + "\n"
+
+                    except KeyError:
+
+                        result += "blob missing baremetal fields\n"
+
+                result += rs + "\n"
 
         except Exception as e:
 
