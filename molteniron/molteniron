@@ -30,7 +30,7 @@ import json
 import os
 import sys
 import yaml
-if (sys.version_info >= (3, 0)):
+if sys.version_info >= (3, 0):
     import http.client  # noqa
 else:
     import httplib  # noqa
@@ -95,15 +95,20 @@ class MoltenIron(object):
         """Send the generated request """
         ip = str(self.conf['serverIP'])
         port = int(self.conf['mi_port'])
-        if (sys.version_info > (3, 0)):
+        if sys.version_info > (3, 0):
             connection = http.client.HTTPConnection(ip, port)  # noqa
         else:
             connection = httplib.HTTPConnection(ip, port)  # noqa
         connection.request('POST', '/', json.dumps(request))
 
         response = connection.getresponse()
+        data = response.read()
 
-        return response.read()
+        if sys.version_info > (3, 0):
+            # We actually receive bytes instead of a string!
+            data = data.decode("utf-8")
+
+        return data
 
     def get_response(self):
         """Returns the response from the server """

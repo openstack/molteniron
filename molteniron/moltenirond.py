@@ -104,7 +104,11 @@ def MakeMoltenIronHandlerWithConf(conf):
         def do_POST(self):
             """HTTP POST support"""
             CL = 'Content-Length'
-            self.data_string = self.rfile.read(int(self.headers[CL]))
+            data = self.rfile.read(int(self.headers[CL]))
+            if sys.version_info >= (3, 0):
+                # We actually received bytes instead of a string!
+                data = data.decode("utf-8")
+            self.data_string = data
             response = self.parse(self.data_string)
             self.send_reply(response)
 
@@ -117,8 +121,11 @@ def MakeMoltenIronHandlerWithConf(conf):
             self.send_response(status_code)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps(response,
-                                        cls=JSON_encoder_with_DateTime))
+            data = json.dumps(response, cls=JSON_encoder_with_DateTime)
+            if sys.version_info >= (3, 0):
+                # We actually need to send bytes instead of a string!
+                data = data.encode()
+            self.wfile.write(data)
 
         def parse(self, request_string):
             """Handle the request. Returns the response of the request """
