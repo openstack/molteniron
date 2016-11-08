@@ -5,7 +5,7 @@
 pbr>=1.6 # Apache-2.0
 
 daemonize
-MySQL-python
+PyMySQL>=0.6.2,!=0.7.7 # MIT License
 pyyaml
 sqlalchemy
 sqlalchemy_utils

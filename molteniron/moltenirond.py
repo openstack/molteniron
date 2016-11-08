@@ -43,7 +43,7 @@ from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import InternalError, OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import MetaData, Table
@@ -306,7 +306,13 @@ class DataBase(object):
             engine = self.create_engine()
             c = engine.connect()
             c.close()
-        except OperationalError:
+        except (OperationalError, InternalError) as e:
+            if isinstance(e, InternalError):
+                (num, msg) = e.orig.args
+                if num != 1049 or msg != "Unknown database 'MoltenIron'":
+                    raise
+            # It does not! Create it.
+            # CREATE DATABASE MoltenIron;
             sqlalchemy_utils.create_database(engine.url)
             engine = self.create_engine()
             c = engine.connect()
@@ -360,7 +366,7 @@ class DataBase(object):
         engine = None
 
         if self.db_type == TYPE_MYSQL:
-            engine = create_engine("mysql://%s:%s@%s/%s"
+            engine = create_engine("mysql+pymysql://%s:%s@%s/%s"
                                    % (self.user,
                                       self.passwd,
                                       self.host,
