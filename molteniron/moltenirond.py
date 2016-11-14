@@ -314,9 +314,15 @@ class DataBase(object):
             c = engine.connect()
             c.close()
         except (OperationalError, InternalError) as e:
+            if DEBUG:
+                print("Database:__init__: Caught %s" % (e, ))
+            # engine.connect will throw sqlalchemy.exc exception
             if isinstance(e, InternalError):
                 (num, msg) = e.orig.args
+                if DEBUG:
+                    print("Database:__init__: (%d,%s)" % (num, msg, ))
                 if num != 1049 or msg != "Unknown database 'MoltenIron'":
+                    # If it is not the above then reraise it!
                     raise
             # It does not! Create it.
             # CREATE DATABASE MoltenIron;
