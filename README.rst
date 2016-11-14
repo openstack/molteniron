@@ -6,43 +6,62 @@ MoltenIron maintains a pool of bare metal nodes.
 Installation
 ------------
 
-With a clean installation of an Ununtu system, do the following::
-  ubuntu@hamzy-test:~$ sudo apt-get install -y build-essential python-dev python3-dev libmysqlclient-dev tox python2.7 python3.5 mysql-server
+With a clean installation of an Ubuntu 16.04 system, do the following::
+
+  $ sudo apt-get install -y build-essential python-dev python3-dev
+  $ sudo apt-get install -y libmysqlclient-dev tox python2.7 python3.5
+  $ sudo apt-get install -y mysql-server
 
 If you see::
+
   E: Unable to locate package tox
 
-then remove tox and reinstall.  Next. do the following::
-  ubuntu@molten-iron:~$ sudo pip install --upgrade tox
+then remove tox and reinstall.  Next, do the following::
 
-Next, check out the MoltenIron project::
-  ubuntu@hamzy-test:~$ git clone git://git.openstack.org/openstack/molteniron.git
-  ubuntu@hamzy-test:~$ cd molteniron/
+  $ sudo pip install --upgrade tox
 
-Before you can install the package requirements, you may need to install a prerequisite::
-  ubuntu@molten-iron:~/molteniron$ hash mysql_config || sudo apt install -y libmysqlclient-dev
+Then, check out the MoltenIron project::
+
+  $ git clone git://git.openstack.org/openstack/molteniron.git
+  $ cd molteniron/
+
+Before you can install the package requirements, you may need to install a
+prerequisite (on a non-clean system)::
+
+  $ hash mysql_config || sudo apt install -y libmysqlclient-dev
 
 Then install the package requirements::
-  ubuntu@hamzy-test:~/molteniron$ sudo pip install --upgrade --force-reinstall --requirement requirements.txt
+
+  $ sudo pip install -U --force-reinstall -r requirements.txt
 
 Before starting the server for the first time, the createDB.py
 script must be run as follows::
-  ubuntu@hamzy-test:~/molteniron$ createDB.py
+
+  $ createDB.py
+
+Or with a clean installation of an Ubuntu 16.04 system, do the following::
+
+  $ sudo apt-get update
+  $ git clone git://git.openstack.org/openstack/molteniron.git
+  $ cd molteniron/
+  $ ./utils/install_requirements.sh
 
 You can run the suite of testcases to make sure everything works::
-  ubuntu@molten-iron:~/molteniron$ (rm -rf .tox/py27/ testenv/; tox -epy27)
+
+  $ (rm -rf .tox/py27/ testenv/; tox -epy27)
+  $ (rm -rf .tox/py35/ testenv/; tox -epy35)
 
 Starting
 --------
 
 To start the server::
 
-    moltenirond-helper start
+    $ sudo moltenirond-helper start
 
 
 To stop the server::
 
-    moltenirond-helper stop
+    $sudo moltenirond-helper stop
 
 
 MoltenIron client
@@ -51,12 +70,12 @@ MoltenIron client
 Use the molteniron client (molteniron) to communicate with the server. For
 usage information type::
 
-    molteniron -h
+    $ molteniron -h
 
 
 For usage of a specific command use::
 
-    molteniron [command] -h
+    $ molteniron [command] -h
 
 
 MoltenIron commands
