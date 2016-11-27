@@ -37,15 +37,27 @@ def main():
     """The main routine"""
     path = sys.argv[0]
     dirs = path.split("/")
-    newPath = "/".join(dirs[:-1]) + "/"
+    # This program is located in molteniron/utils/ directory.
+    # The conf.yaml is located in the molteniron/ directory.
+    newPath = "/".join(dirs[:-2]) + "/"
     fobj = open(newPath + "conf.yaml", "r")
     conf = yaml.load(fobj)
 
     # Create the SQL User
-    SQL("CREATE USER '" + conf["sqlUser"] + "'@'localhost' "
-        "IDENTIFIED BY '" + conf["sqlPass"] + "';")
-    SQL("GRANT ALL ON MoltenIron.* TO '" + conf["sqlUser"] + "'@'localhost';")
+    SQL("CREATE USER '" +
+        conf["sqlUser"] +
+        "'@'localhost' IDENTIFIED BY '" +
+        conf["sqlPass"] +
+        "';")
+
+    # And grant that SQL user access to the MoltenIron database
+    SQL("GRANT ALL ON MoltenIron.* TO '" +
+        conf["sqlUser"] +
+        "'@'localhost';")
+
     return 0
 
 if __name__ == "__main__":
-    main()
+    rc = main()
+
+    sys.exit(rc)
