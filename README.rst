@@ -150,8 +150,6 @@ During the creation of a job, in the pre_test_hook.sh, add the following snippet
       REPO_DIR=/opt/stack/new/molteniron
       MI_CONF_DIR=/usr/local/etc/molteniron
       MI_IP=10.1.2.3     # @TODO - Replace with your IP addr here!
-      MI_SQLUSER=user    # @TODO - Replace with your mysql user here!
-      MI_SQLPASS=passwd  # @TODO - Replace with your mysql password here!
 
       # Grab molteniron and install it
       git clone https://git.openstack.org/openstack/molteniron ${REPO_DIR} || exit 1
@@ -173,21 +171,11 @@ During the creation of a job, in the pre_test_hook.sh, add the following snippet
         sudo sed -i "s/127.0.0.1/${MI_IP}/g" ${MI_CONF_DIR}/conf.yaml
       fi
 
-      if [ -n "${MI_SQLUSER}" ]
-      then
-        # Set the molteniron database user in the conf file
-        sudo sed -r -i -e 's,(^sqlUser: ")([a-zA-Z_]+)("$),\1'${MI_SQLUSER}'\3,' ${MI_CONF_DIR}/conf.yaml
-      fi
-
-      if [ -n "${MI_SQLPASS}" ]
-      then
-        # Set the molteniron database password in the conf file
-        sudo sed -r -i -e 's,(^sqlPass: ")([a-zA-Z_]+)("$),\1'${MI_SQLPASS}'\3,' ${MI_CONF_DIR}/conf.yaml
-      fi
-
-      export dsvm_uuid
-      # NOTE: dsvm_uuid used in the following script, hence the -E
-      sudo -E ${REPO_DIR}/utils/test_hook_configure_mi.sh
+      sudo ${REPO_DIR}/utils/test_hook_mi_ipmiblob.py \
+           --hardware-info=/opt/stack/new/devstack/files/hardware_info \
+           --localrc=/opt/stack/new/devstack/localrc \
+           ${dsvm_uuid} \
+           1
     ) || exit $?
 
 and change the MI_IP environment variable to be your MoltenIron server!
