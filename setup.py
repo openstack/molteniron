@@ -34,6 +34,7 @@ setup(name="molteniron",
                "molteniron/molteniron",
                "utils/test_hook_mi_ipmiblob.py",
                "utils/test_hook_mi_ipmiblob.sh"],
-      data_files=[("etc/molteniron/", ["conf.yaml"])],
+      package_data={"molteniron": ["*.yaml"]},
+      include_package_data=True,
       setup_requires=['pbr'],
       pbr=True)

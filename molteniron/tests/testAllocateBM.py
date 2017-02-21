@@ -27,6 +27,7 @@ import argparse
 import json
 from molteniron import moltenirond
 import os
+from pkg_resources import resource_filename
 import sys
 import yaml
 
@@ -88,11 +89,11 @@ if __name__ == "__main__":
             print(msg, file=sys.stderr)
             sys.exit(1)
 
-        yaml_file = os.path.realpath("%s/conf.yaml" % (args.conf_dir, ))
+        YAML_CONF = os.path.realpath("%s/conf.yaml" % (args.conf_dir, ))
     else:
-        yaml_file = "/usr/local/etc/molteniron/conf.yaml"
+        YAML_CONF = resource_filename("molteniron", "conf.yaml")
 
-    with open(yaml_file, "r") as fobj:
+    with open(YAML_CONF, "r") as fobj:
         conf = yaml.load(fobj)
 
     request1 = {

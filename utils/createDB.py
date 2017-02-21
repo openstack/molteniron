@@ -40,7 +40,7 @@ def main():
     # This program is located in molteniron/utils/ directory.
     # The conf.yaml is located in the molteniron/ directory.
     newPath = "/".join(dirs[:-2]) + "/"
-    fobj = open(newPath + "conf.yaml", "r")
+    fobj = open(newPath + "molteniron/conf.yaml", "r")
     conf = yaml.load(fobj)
 
     # Create the SQL User

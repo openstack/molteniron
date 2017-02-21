@@ -25,15 +25,16 @@ This is a helper program for the MoltenIron server.
 from __future__ import print_function
 
 import argparse
-import sys
-import os
-import signal
-import yaml
 from daemonize import Daemonize
 from molteniron import moltenirond
+import os
+from pkg_resources import resource_filename
+import signal
+import sys
+import yaml
 
 PID = "/var/run/moltenirond.pid"
-YAML_CONF = "/usr/local/etc/molteniron/conf.yaml"
+YAML_CONF = None
 ERROR_LOGFILE = "/tmp/MoltenIron-error-logfile"
 
 
@@ -120,6 +121,12 @@ if __name__ == "__main__":
             sys.exit(1)
 
         YAML_CONF = os.path.realpath("%s/conf.yaml" % (args.conf_dir, ))
+    else:
+        YAML_CONF = resource_filename("molteniron", "conf.yaml")
+
+    # Test for read ability
+    fobj = open(YAML_CONF, "r")
+    fobj.close()
 
     if args.pid_dir:
         if not os.path.isdir(args.pid_dir):

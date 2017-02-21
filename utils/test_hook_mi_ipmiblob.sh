@@ -16,7 +16,6 @@
 # limitations under the License.
 
 test_hook_mi_ipmiblob.py \
-	--conf-dir=testenv/etc/molteniron/ \
 	--hardware-info=testenv/tmp/hardware_info \
 	--localrc=testenv/tmp/localrc \
 	$(uuidgen) \
