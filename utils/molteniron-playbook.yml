@@ -1,0 +1,161 @@
+# Copyright (c) 2017 IBM Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Example commands to configure the ansible controller:
+#
+# ubuntu@hamzy-dev:~$ cat << __EOF__ | sudo tee -a /etc/ansible/hosts
+# # @BEGIN
+# 192.168.0.15
+# hamzy-test ansible_host=192.168.0.15
+#
+# [molteniron]
+# hamzy-test
+# # @END
+# __EOF__
+# ubuntu@hamzy-dev:~$ ansible molteniron -m ping
+# hamzy-test | SUCCESS => {
+#     "changed": false,
+#     "ping": "pong"
+# }
+#
+# Remember to add the controller's public ssh key to:
+# ubuntu@192.168.0.15/24:/home/ubuntu/.ssh/authorized_keys
+#
+# Example command to deploy a molteniron server on a fresh install of
+# Ubuntu 16.04:
+#
+# ubuntu@hamzy-dev:~$ ansible-playbook molteniron-playbook.yml -f 10
+#
+
+---
+- name: deploy molteniron server
+  hosts: molteniron
+# strategy: debug
+  gather_facts: yes
+  become: true
+  become_user: root
+  become_method: 'sudo'
+
+  vars:
+    moltenirond_pid_file: "/var/run/moltenirond.pid"
+    molteniron_source_dir: "/home/ubuntu/molteniron"
+
+  tasks:
+    - name: install base packages
+      apt:
+        pkg: "{{ item }}"
+        state: present
+        update_cache: yes
+        cache_valid_time: 604800
+      with_items:
+        - sysstat
+        - build-essential
+        - python-dev
+        - python3-dev
+        - libmysqlclient-dev
+        - tox
+        - python2.7
+        - python3.5
+        - python-pip
+        - python-mysqldb
+        - mysql-server
+
+    - name: start mysql server
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - stat:
+        path: "{{ molteniron_source_dir }}"
+      register: molteniron_source_dir_st
+
+    - name: install molteniron source code from git
+      git:
+        repo: git://git.openstack.org/openstack/molteniron.git
+        dest: "{{ molteniron_source_dir }}"
+        version: HEAD
+      when: molteniron_source_dir_st.stat.islnk is not defined
+
+    # NOTE: We need to requery if the directory has been installed, because
+    #       it may have changed.
+    - stat:
+        path: "{{ molteniron_source_dir }}"
+      register: molteniron_source_dir_st2
+
+    - name: change to master branch in git
+      shell: git checkout master
+      args:
+        chdir: "{{ molteniron_source_dir }}"
+      when: molteniron_source_dir_st2.stat.islnk is defined
+
+    - name: pip install molteniron from git repository
+      shell: pip install -U --force-reinstall
+                 -r requirements.txt > pip_install.log 2>&1
+      args:
+        chdir: "{{ molteniron_source_dir }}"
+        creates: "{{ molteniron_source_dir }}/pip_install.log"
+
+    - name: python install molteniron from git repository
+      shell: python setup.py install > python_install.log 2>&1
+      args:
+        chdir: "{{ molteniron_source_dir }}"
+        creates: "{{ molteniron_source_dir }}/python_install.log"
+
+    - name: authorize openstack_citest MYSQL access
+      mysql_user:
+        login_user: root
+        login_password: ""
+        check_implicit_admin: yes
+        name: openstack_citest
+        password: openstack_citest
+        priv: "*.*:ALL,GRANT"
+        state: present
+
+    - name: grab the contents of {{ moltenirond_pid_file }}
+      shell: cat {{ moltenirond_pid_file }}
+      ignore_errors: true
+      register: moltenirond_pid
+
+    - debug:
+        var: moltenirond_pid
+
+    - name: run ps -l on the pid
+      shell: ps -l {{ moltenirond_pid.stdout }}
+      register: moltenirond_pid_info
+      when: moltenirond_pid.stdout != ""
+
+    - debug:
+        var: moltenirond_pid_info
+
+    - name: check to see if molteniron is running
+      shell: test -f {{ moltenirond_pid_file }};
+             if [ $? -eq 0 ]; then echo RUNNING; else echo STOPPED; fi
+      register: moltenirond_pid_status
+
+    - debug:
+        var: moltenirond_pid_status
+
+    - name: start molteniron server
+      shell: moltenirond-helper start
+      when: moltenirond_pid_status.stdout == "STOPPED"
+
+    - name: run the molteniron status command
+      shell: molteniron --output=result status --type=human
+      register: molteniron_result_status
+
+    - debug:
+        var: molteniron_result_status
