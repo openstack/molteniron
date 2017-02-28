@@ -342,9 +342,10 @@ class DataBase(object):
                 # field_name length special_fmt skip
                 ("id", 4, int, False),
                 ("name", 6, str, False),
+                ("ipmi_ip", 16, str, False),
                 ("blob", 40, str, False),
                 ("status", 8, str, False),
-                ("provisioned", 13, str, False),
+                ("provisioned", 40, str, False),
                 # We add timeString
                 ("time", 14, float, False),
             ]
@@ -365,7 +366,7 @@ class DataBase(object):
                 ("ram_mb", 8, int, False),
                 ("disk_gb", 9, int, False),
                 ("status", 8, str, False),
-                ("provisioned", 13, str, False),
+                ("provisioned", 40, str, False),
                 # We add timeString
                 ("time", 14, float, False),
             ]
