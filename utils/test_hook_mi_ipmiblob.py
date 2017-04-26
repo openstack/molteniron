@@ -64,6 +64,11 @@ if __name__ == "__main__":
     parser.add_argument("number_of_nodes",
                         type=int,
                         help="How many nodes to reserve")
+    parser.add_argument("node_pool",
+                        type=str,
+                        default="default",
+                        nargs='?',
+                        help="Name of node_pool")
 
     args = parser.parse_args()
 
@@ -91,6 +96,7 @@ if __name__ == "__main__":
         args_map = {"output": "json",
                     "owner_name": args.owner_name,
                     "number_of_nodes": args.number_of_nodes,
+                    "node_pool": args.node_pool,
                     "func": getattr(mi, "allocate"),
                     "conf_dir": "testenv/etc/molteniron/"}
 

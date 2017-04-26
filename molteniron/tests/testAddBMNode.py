@@ -122,6 +122,24 @@ if __name__ == "__main__":
         "ram_mb": 51000,
         "disk_gb": 500
     }
+    request5 = {
+        "name": "pkvmci854",
+        "ipmi_ip": "10.228.119.134",
+        "status": "used",
+        "provisioned": "6b8823df-4e14-4811-98b9-32e27397540d",
+        "timestamp": "1460491533",
+        "allocation_pool": "10.228.112.16,10.228.112.17",
+        "node_pool": "test"
+    }
+    node5 = {
+        "ipmi_user": "user",
+        "ipmi_password": "33f448a4fc176492",
+        "port_hwaddr": "85:e0:73:e9:fc:ca",
+        "cpu_arch": "ppc64el",
+        "cpus": 20,
+        "ram_mb": 51000,
+        "disk_gb": 500
+    }
 
     # 8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----
     database = moltenirond.DataBase(conf, moltenirond.TYPE_SQLITE_MEMORY)
@@ -143,6 +161,13 @@ if __name__ == "__main__":
     print(ret)
     assert ret == {'status': 200}
     ret = database.addBMNode(request3, node3)
+    print(ret)
+    assert ret['status'] == 400
+    assert ret['message'] == "Node already exists"
+    ret = database.addBMNode(request5, node5)
+    print(ret)
+    assert ret == {'status': 200}
+    ret = database.addBMNode(request5, node5)
     print(ret)
     assert ret['status'] == 400
     assert ret['message'] == "Node already exists"

@@ -158,7 +158,8 @@ def MakeMoltenIronHandlerWithConf(conf):
                     response = database.addBMNode(request, node)
                 elif method == 'allocate':
                     response = database.allocateBM(request['owner_name'],
-                                                   request['number_of_nodes'])
+                                                   request['number_of_nodes'],
+                                                   request['node_pool'])
                 elif method == 'release':
                     response = database.deallocateOwner(request['owner_name'])
                 elif method == 'get_field':
@@ -213,6 +214,7 @@ class Nodes(declarative_base()):
     status = Column('status', String(20))
     provisioned = Column('provisioned', String(50))
     timestamp = Column('timestamp', TIMESTAMP)
+    node_pool = Column('node_pool', String(20))
 
     __table__ = Table(__tablename__,
                       metadata,
@@ -222,7 +224,8 @@ class Nodes(declarative_base()):
                       blob,
                       status,
                       provisioned,
-                      timestamp)
+                      timestamp,
+                      node_pool)
 
     def map(self):
         """Returns a map of the database row contents"""
@@ -237,7 +240,8 @@ ipmi_ip='%s',
 blob='%s',
 status='%s',
 provisioned='%s',
-timestamp='%s'/>"""
+timestamp='%s',
+node_pool='%s'/>"""
         fmt = fmt.replace('\n', ' ')
 
         return fmt % (self.name,
@@ -245,7 +249,8 @@ timestamp='%s'/>"""
                       self.blob,
                       self.status,
                       self.provisioned,
-                      self.timestamp)
+                      self.timestamp,
+                      self.node_pool)
 
 
 class IPs(declarative_base()):
@@ -348,6 +353,7 @@ class DataBase(object):
                 ("provisioned", 40, str, False),
                 # We add timeString
                 ("time", 14, float, False),
+                ("node_pool", 19, str, False),
             ]
         }
         self.baremetal_status = {
@@ -369,6 +375,7 @@ class DataBase(object):
                 ("provisioned", 40, str, False),
                 # We add timeString
                 ("time", 14, float, False),
+                ("node_pool", 19, str, False),
             ]
         }
 
@@ -489,16 +496,21 @@ class DataBase(object):
             ts = timestamp.timetuple()
         return ts
 
-    def allocateBM(self, owner_name, how_many):
+    def allocateBM(self, owner_name, how_many, node_pool="Default"):
         """Checkout machines from the database and return necessary info """
 
         try:
             with self.session_scope() as session, \
                     self.connection_scope() as conn:
 
+                count_with_pool = 0
                 # Get a list of IDs for nodes that are free
                 count = session.query(Nodes).filter_by(status="ready").count()
-
+                # Get a list of IDs for nodes that are free and with specific
+                # node_pool
+                if node_pool != "Default":
+                    count_with_pool = session.query(Nodes).filter_by(
+                        status="ready", node_pool=node_pool).count()
                 # If we don't have enough nodes return an error
                 if count < how_many:
                     fmt = "Not enough available nodes found."
@@ -510,7 +522,12 @@ class DataBase(object):
 
                 for _ in range(how_many):
                     first_ready = session.query(Nodes)
-                    first_ready = first_ready.filter_by(status="ready")
+                    if count_with_pool > 0:
+                        first_ready = first_ready.filter_by(
+                            status="ready", node_pool=node_pool)
+                        count_with_pool = count_with_pool - 1
+                    else:
+                        first_ready = first_ready.filter_by(status="ready")
                     first_ready = first_ready.first()
 
                     node_id = first_ready.id
@@ -693,6 +710,10 @@ class DataBase(object):
                         if DEBUG:
                             print("timestamp = %s" % (timestamp, ))
                         stmt = stmt.values(timestamp=timestamp)
+                if 'node_pool' in request:
+                    stmt = stmt.values(node_pool=request['node_pool'])
+                else:
+                    stmt = stmt.values(node_pool="Default")
                 if DEBUG:
                     print(stmt.compile().params)
 
@@ -1107,7 +1128,8 @@ class DataBase(object):
                 blob,
                 node.status,
                 node.provisioned,
-                timeString)
+                timeString,
+                node.node_pool)
 
     def baremetal_status_elements(self, node, timeString):
 
@@ -1125,7 +1147,8 @@ class DataBase(object):
                 blob["disk_gb"],
                 node.status,
                 node.provisioned,
-                timeString)
+                timeString,
+                node.node_pool)
 
     def status_csv(self, get_status_elements, **status_map):
         """Return a comma separated list of values"""

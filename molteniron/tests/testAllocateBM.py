@@ -102,7 +102,8 @@ if __name__ == "__main__":
         "status": "ready",
         "provisioned": "",
         "timestamp": "",
-        "allocation_pool": "10.228.112.10,10.228.112.11"
+        "allocation_pool": "10.228.112.10,10.228.112.11",
+        "node_pool": "Default"
     }
     node1 = {
         "ipmi_user": "user",
@@ -119,7 +120,8 @@ if __name__ == "__main__":
         "status": "ready",
         "provisioned": "",
         "timestamp": "",
-        "allocation_pool": "10.228.112.8,10.228.112.9"
+        "allocation_pool": "10.228.112.8,10.228.112.9",
+        "node_pool": "Default"
     }
     node2 = {
         "ipmi_user": "user",
@@ -136,7 +138,8 @@ if __name__ == "__main__":
         "status": "used",
         "provisioned": "7a72eccd-3153-4d08-9848-c6d3b1f18f9f",
         "timestamp": "1460489832",
-        "allocation_pool": "10.228.112.12,10.228.112.13"
+        "allocation_pool": "10.228.112.12,10.228.112.13",
+        "node_pool": "Default"
     }
     node3 = {
         "ipmi_user": "user",
@@ -153,9 +156,28 @@ if __name__ == "__main__":
         "status": "used",
         "provisioned": "6b8823ef-3e14-4811-98b9-32e27397540d",
         "timestamp": "1460491566",
-        "allocation_pool": "10.228.112.14,10.228.112.15"
+        "allocation_pool": "10.228.112.14,10.228.112.15",
+        "node_pool": "Default"
     }
     node4 = {
+        "ipmi_user": "user",
+        "ipmi_password": "33f448a4fc176492",
+        "port_hwaddr": "85:e0:73:e9:fc:ca",
+        "cpu_arch": "ppc64el",
+        "cpus": 20,
+        "ram_mb": 51000,
+        "disk_gb": 500
+    }
+    request5 = {
+        "name": "vmci854",
+        "ipmi_ip": "10.228.118.133",
+        "status": "ready",
+        "provisioned": "6b8823ef-3e14-4811-98b9-32e27397540d",
+        "timestamp": "1460491566",
+        "allocation_pool": "10.228.112.14,10.228.112.15",
+        "node_pool": "test"
+    }
+    node5 = {
         "ipmi_user": "user",
         "ipmi_password": "33f448a4fc176492",
         "port_hwaddr": "85:e0:73:e9:fc:ca",
@@ -244,6 +266,25 @@ if __name__ == "__main__":
     assert ret == {'status': 404,
                    'message': ('Not enough available nodes found. '
                                'Found 2, requested 3')}
+
+    database.close()
+    del database
+
+    # 8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----8<-----
+    database = moltenirond.DataBase(conf, moltenirond.TYPE_SQLITE_MEMORY)
+    database.delete_db()
+    database.close()
+    del database
+
+    database = moltenirond.DataBase(conf, moltenirond.TYPE_SQLITE_MEMORY)
+    ret = database.addBMNode(request5, node5)
+    print(ret)
+    assert ret == {'status': 200}
+    ret = database.allocateBM("hamzy", 1, "test")
+    print(ret)
+    assert ret['status'] == 200
+    assert len(ret["nodes"]) == 1
+    compare_provisioned_nodes(ret["nodes"]["node_1"], request5, node5)
 
     database.close()
     del database

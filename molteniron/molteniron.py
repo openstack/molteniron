@@ -162,6 +162,11 @@ class MoltenIron(object):
                             type=int,
                             help="Amount of disk (in GiB)"
                                  " that the node has")
+            sp.add_argument("node_pool",
+                            type=str,
+                            default="default",
+                            nargs='?',
+                            help="Node pool name")
             sp.set_defaults(func=self.add_baremetal)
             return
 
@@ -190,6 +195,11 @@ class MoltenIron(object):
             sp.add_argument("args",
                             nargs=argparse.REMAINDER,
                             help="Architecture of the node")
+            sp.add_argument("node_pool",
+                            type=str,
+                            default="default",
+                            nargs='?',
+                            help="Node pool name")
             sp.set_defaults(func=self.add_keyvalue_pairs)
             return
 
@@ -217,6 +227,11 @@ class MoltenIron(object):
                                  " IPs to be used in deployment")
             sp.add_argument("blob",
                             help="JSON encoded string")
+            sp.add_argument("node_pool",
+                            type=str,
+                            default="default",
+                            nargs='?',
+                            help="Node pool name")
             sp.set_defaults(func=self.add_json_blob)
             return
 
@@ -236,6 +251,11 @@ class MoltenIron(object):
             sp.add_argument("number_of_nodes",
                             type=int,
                             help="How many nodes to reserve")
+            sp.add_argument("node_pool",
+                            type=str,
+                            default="default",
+                            nargs='?',
+                            help="Node pool name")
             sp.set_defaults(func=self.allocate)
             return
 

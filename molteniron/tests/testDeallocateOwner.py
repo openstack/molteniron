@@ -102,7 +102,8 @@ if __name__ == "__main__":
         "status": "ready",
         "provisioned": "",
         "timestamp": "",
-        "allocation_pool": "10.228.112.10,10.228.112.11"
+        "allocation_pool": "10.228.112.10,10.228.112.11",
+        "node_pool": "Default"
     }
     node1 = {
         "ipmi_user": "user",
@@ -119,7 +120,8 @@ if __name__ == "__main__":
         "status": "ready",
         "provisioned": "",
         "timestamp": "",
-        "allocation_pool": "10.228.112.8,10.228.112.9"
+        "allocation_pool": "10.228.112.8,10.228.112.9",
+        "node_pool": "Default"
     }
     node2 = {
         "ipmi_user": "user",
@@ -136,7 +138,8 @@ if __name__ == "__main__":
         "status": "used",
         "provisioned": "7a72eccd-3153-4d08-9848-c6d3b1f18f9f",
         "timestamp": "1460489832",
-        "allocation_pool": "10.228.112.12,10.228.112.13"
+        "allocation_pool": "10.228.112.12,10.228.112.13",
+        "node_pool": "Default"
     }
     node3 = {
         "ipmi_user": "user",
@@ -153,7 +156,8 @@ if __name__ == "__main__":
         "status": "used",
         "provisioned": "6b8823ef-3e14-4811-98b9-32e27397540d",
         "timestamp": "1460491566",
-        "allocation_pool": "10.228.112.14,10.228.112.15"
+        "allocation_pool": "10.228.112.14,10.228.112.15",
+        "node_pool": "Default"
     }
     node4 = {
         "ipmi_user": "user",
