@@ -3,23 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to molteniron.git's documentation!
-========================================================
+Welcome to Molten Iron's documentation!
+=======================================
+
+MoltenIron maintains a pool of bare metal nodes.
 
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   readme
-   installation
-   usage
-   contributing
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+   install/index
+   user/index
+   reference/index
+   contributor/index

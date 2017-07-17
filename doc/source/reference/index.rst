@@ -4,15 +4,14 @@
 
  http://creativecommons.org/licenses/by/3.0/legalcode
 
-===========
-Molten Iron
-===========
-
-https://bugs.launchpad.net/ironic/+bug/1633540
+======================
+Molten Iron motivation
+======================
 
 Running Ironic on a set of Bare Metal machines needs a database and library
 to help manage the pool.
 
+See also Launchpad bug `#1633540 <https://bugs.launchpad.net/ironic/+bug/1633540>`_.
 
 Problem description
 ===================
