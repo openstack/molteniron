@@ -85,7 +85,7 @@
 
     - name: install molteniron source code from git
       git:
-        repo: git://git.openstack.org/openstack/molteniron.git
+        repo: https://git.openstack.org/openstack/molteniron.git
         dest: "{{ molteniron_source_dir }}"
         version: HEAD
       when: molteniron_source_dir_st.stat.islnk is not defined

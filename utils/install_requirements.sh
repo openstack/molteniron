@@ -16,7 +16,7 @@
 # limitations under the License.
 
 #
-# $ git clone git://git.openstack.org/openstack/molteniron.git
+# $ git clone https://git.openstack.org/openstack/molteniron.git
 # $ cd molteniron/
 # $ ./utils/install_requirements.sh
 #
