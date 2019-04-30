@@ -103,7 +103,7 @@ During the creation of a job, in the pre_test_hook.sh, add the following snippet
       MI_IP=10.1.2.3     # @TODO - Replace with your IP addr here!
 
       # Grab molteniron and install it
-      git clone https://git.openstack.org/openstack/molteniron ${REPO_DIR} || exit 1
+      git clone https://opendev.org/openstack/molteniron ${REPO_DIR} || exit 1
 
       cd ${REPO_DIR}
 

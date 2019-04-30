@@ -18,7 +18,7 @@ then remove tox and reinstall.  Next, do the following::
 
 Then, check out the MoltenIron project::
 
-  $ git clone https://git.openstack.org/openstack/molteniron.git
+  $ git clone https://opendev.org/openstack/molteniron.git
   $ cd molteniron/
 
 Before you can install the package requirements, you may need to install a
@@ -38,7 +38,7 @@ script must be run as follows::
 Or with a clean installation of an Ubuntu 16.04 system, do the following::
 
   $ sudo apt-get update
-  $ git clone https://git.openstack.org/openstack/molteniron.git
+  $ git clone https://opendev.org/openstack/molteniron.git
   $ cd molteniron/
   $ ./utils/install_requirements.sh
 
