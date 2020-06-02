@@ -21,8 +21,6 @@ Create the MoltenIron user in mysql and grant it access.
 
 # pylint: disable-msg=C0103
 
-from __future__ import print_function
-
 import os
 import sys
 import yaml

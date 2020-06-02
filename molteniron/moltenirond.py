@@ -27,8 +27,6 @@ This is the MoltenIron server.
 # pylint: disable-msg=C0103
 # pylint: disable=redefined-outer-name
 
-from __future__ import print_function
-
 import argparse
 import calendar
 from datetime import datetime

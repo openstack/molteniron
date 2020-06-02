@@ -21,8 +21,6 @@ Tests the MoltenIron deallocateBM command.
 
 # pylint: disable-msg=C0103
 
-from __future__ import print_function
-
 import argparse
 import json
 from molteniron import moltenirond

@@ -22,8 +22,6 @@ This is a helper program for the MoltenIron server.
 # pylint: disable-msg=C0103
 # pylint: disable=redefined-outer-name
 
-from __future__ import print_function
-
 import argparse
 from daemonize import Daemonize
 from molteniron import moltenirond

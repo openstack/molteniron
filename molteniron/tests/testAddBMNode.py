@@ -21,8 +21,6 @@ Tests the addBMNode MoltenIron command.
 
 # pylint: disable-msg=C0103
 
-from __future__ import print_function
-
 import argparse
 from molteniron import moltenirond
 import os
