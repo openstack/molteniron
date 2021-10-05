@@ -23,6 +23,7 @@ Create the MoltenIron user in mysql and grant it access.
 
 import os
 import sys
+
 import yaml
 
 
@@ -42,18 +43,18 @@ def main():
     conf = yaml.load(fobj)
 
     # Create the SQL User
-    SQL("CREATE USER '" +
-        conf["sqlUser"] +
-        "'@'localhost' IDENTIFIED BY '" +
-        conf["sqlPass"] +
-        "';")
+    SQL("CREATE USER '"
+        + conf["sqlUser"]
+        + "'@'localhost' IDENTIFIED BY '"
+        + conf["sqlPass"] + "';")
 
     # And grant that SQL user access to the MoltenIron database
-    SQL("GRANT ALL ON MoltenIron.* TO '" +
-        conf["sqlUser"] +
-        "'@'localhost';")
+    SQL("GRANT ALL ON MoltenIron.* TO '"
+        + conf["sqlUser"]
+        + "'@'localhost';")
 
     return 0
+
 
 if __name__ == "__main__":
     rc = main()

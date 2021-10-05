@@ -29,17 +29,16 @@ This is the MoltenIron server.
 
 import argparse
 import calendar
+import collections
+from contextlib import contextmanager
 from datetime import datetime
 import json
 import os
-from pkg_resources import resource_filename
 import sys
 import time
 import traceback
-import yaml
 
-from contextlib import contextmanager
-
+from pkg_resources import resource_filename
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.exc import InternalError, OperationalError
@@ -49,10 +48,8 @@ from sqlalchemy.schema import MetaData, Table
 from sqlalchemy.sql import insert, update, delete
 from sqlalchemy.sql import and_
 from sqlalchemy.types import TIMESTAMP
-
 import sqlalchemy_utils
-
-import collections  # noqa
+import yaml
 
 if sys.version_info >= (3, 0):
     from http.server import HTTPServer, BaseHTTPRequestHandler  # noqa
@@ -229,8 +226,8 @@ class Nodes(declarative_base()):
         """Returns a map of the database row contents"""
         return {key: value for key, value
                 in list(self.__dict__.items())
-                if not key.startswith('_') and
-                not isinstance(key, collections.Callable)}
+                if not key.startswith('_')
+                and not isinstance(key, collections.Callable)}
 
     def __repr__(self):
         fmt = """<Node(name='%s',
@@ -290,6 +287,7 @@ ip='%s' />"""
         return fmt % (self.id,
                       self.node_id,
                       self.ip)
+
 
 TYPE_MYSQL = 1
 # Is there a mysql memory path?
@@ -1039,10 +1037,7 @@ class DataBase(object):
         for (field, length, _, skip) in ei:
             if skip:
                 continue
-            dl += (" " +
-                   field +
-                   ' ' * (length - len(field)) +
-                   " +")
+            dl += (" " + field + ' ' * (length - len(field)) + " +")
 
         index = 0
         fl = "|"

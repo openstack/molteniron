@@ -37,7 +37,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Molten Iron'
+project = u'molteniron'
 copyright = u'2016, OpenStack Foundation'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
@@ -48,7 +48,12 @@ add_function_parentheses = True
 add_module_names = True
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'native'
+
+# openstackdocstheme options
+openstackdocs_repo_name = 'openstack/molteniron'
+openstackdocs_use_storyboard = True
+openstackdocs_pdf_link = True
 
 # -- Options for HTML output --------------------------------------------------
 

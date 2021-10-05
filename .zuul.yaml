@@ -1,4 +1,13 @@
 - project:
     templates:
-      - openstack-python3-ussuri-jobs
-      - check-requirements
+      #NOTE(rpittau): to run the requirements test we need an alternative to
+      # daemonize as it's unmaintained since 2018 and it doesn't support
+      # python >= 3.6
+      #- check-requirements
+      #NOTE(rpittau): cover tests needs some config changes, we'll enable them
+      # in a future patch
+      #- openstack-cover-jobs
+      - openstack-lower-constraints-master-branch-jobs
+      - openstack-python3-yoga-jobs
+      - publish-openstack-docs-pti
+      - release-notes-jobs-python3

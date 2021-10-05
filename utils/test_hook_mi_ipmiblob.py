@@ -25,11 +25,13 @@ a MoltenIron server.
 
 import argparse
 import json
-from molteniron import molteniron
 import os
-from pkg_resources import resource_filename
 import sys
+
+from pkg_resources import resource_filename
 import yaml
+
+from molteniron import molteniron
 
 
 if __name__ == "__main__":
@@ -107,8 +109,8 @@ if __name__ == "__main__":
         try:
             rc = response_map["status"]
         except KeyError:
-            msg = ("Error: Server returned: %s and we expected a status " +
-                   "somewhere") % (response_map, )
+            msg = ("Error: Server returned: %s and we expected a status "
+                   + "somewhere") % (response_map, )
             print(msg, file=sys.stderr)
             exit(444)
 
@@ -150,10 +152,10 @@ if __name__ == "__main__":
 
         with open(args.hardware_info, "w") as hi_obj:
             # Write one line
-            hi_obj.write(("%(ipmi_ip)s" % node) +
-                         (" %(port_hwaddr)s" +
-                          " %(ipmi_user)s" +
-                          " %(ipmi_password)s\n") % blob)
+            hi_obj.write(("%(ipmi_ip)s" % node)
+                         + (" %(port_hwaddr)s"
+                            + " %(ipmi_user)s"
+                            + " %(ipmi_password)s\n") % blob)
 
         pool = node["allocation_pool"].split(",")
 
@@ -162,8 +164,8 @@ if __name__ == "__main__":
 
         with open(args.localrc, "a") as l_obj:
             # Write multiple lines
-            l_obj.write(("IRONIC_HW_ARCH=%(cpu_arch)s\n" +
-                         "IRONIC_HW_NODE_CPU=%(cpus)s\n" +
-                         "IRONIC_HW_NODE_RAM=%(ram_mb)s\n" +
-                         "IRONIC_HW_NODE_DISK=%(disk_gb)s\n") % blob +
-                        "ALLOCATION_POOL=\"%s\"\n" % (allocation_pool, ))
+            l_obj.write(("IRONIC_HW_ARCH=%(cpu_arch)s\n"
+                         + "IRONIC_HW_NODE_CPU=%(cpus)s\n"
+                         + "IRONIC_HW_NODE_RAM=%(ram_mb)s\n"
+                         + "IRONIC_HW_NODE_DISK=%(disk_gb)s\n") % blob
+                        + "ALLOCATION_POOL=\"%s\"\n" % (allocation_pool, ))

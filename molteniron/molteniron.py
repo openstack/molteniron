@@ -45,6 +45,7 @@ def makeRegistrar():
     registrar.all = registry
     return registrar
 
+
 # Create the decorator
 command = makeRegistrar()
 

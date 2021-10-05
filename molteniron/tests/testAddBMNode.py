@@ -22,11 +22,14 @@ Tests the addBMNode MoltenIron command.
 # pylint: disable-msg=C0103
 
 import argparse
-from molteniron import moltenirond
 import os
-from pkg_resources import resource_filename
 import sys
+
+from pkg_resources import resource_filename
 import yaml
+
+from molteniron import moltenirond
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Molteniron CLI tool")

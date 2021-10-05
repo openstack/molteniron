@@ -23,12 +23,14 @@ Tests the MoltenIron cull command.
 
 import argparse
 import json
-from molteniron import moltenirond
 import os
-from pkg_resources import resource_filename
 import sys
 import time
+
+from pkg_resources import resource_filename
 import yaml
+
+from molteniron import moltenirond
 
 
 def result_to_r(res):
@@ -67,6 +69,7 @@ def compare_culled_nodes(lhs, rhs_r, rhs_n):
     del lhs_r['id']
     assert lhs_r == rhs_r
     assert lhs_n == rhs_n
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Molteniron CLI tool")

@@ -23,13 +23,16 @@ This is a helper program for the MoltenIron server.
 # pylint: disable=redefined-outer-name
 
 import argparse
-from daemonize import Daemonize
-from molteniron import moltenirond
 import os
-from pkg_resources import resource_filename
 import signal
 import sys
+
+from daemonize import Daemonize
+from pkg_resources import resource_filename
 import yaml
+
+from molteniron import moltenirond
+
 
 PID = "/var/run/moltenirond.pid"
 YAML_CONF = None
@@ -156,8 +159,8 @@ if __name__ == "__main__":
         daemon = Daemonize(app="moltenirond",
                            pid=PID,
                            action=moltenirond_main)
-
         daemon.start()
+
     elif args.command[0].upper().lower() == "stop":
         try:
             pid = get_moltenirond_pid()

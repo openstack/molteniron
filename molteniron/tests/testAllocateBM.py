@@ -23,11 +23,13 @@ Tests the MoltenIron allocateBM command.
 
 import argparse
 import json
-from molteniron import moltenirond
 import os
-from pkg_resources import resource_filename
 import sys
+
+from pkg_resources import resource_filename
 import yaml
+
+from molteniron import moltenirond
 
 
 def result_to_r(res):
