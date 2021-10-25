@@ -507,6 +507,11 @@ class DataBase(object):
                 if node_pool != "Default":
                     count_with_pool = session.query(Nodes).filter_by(
                         status="ready", node_pool=node_pool).count()
+                    if count_with_pool < how_many:
+                        fmt = "Not enough available nodes found."
+                        fmt += " Found %d, requested %d"
+                        return {'status': 404,
+                                'message': fmt % (count_with_pool, how_many, )}
                 # If we don't have enough nodes return an error
                 if count < how_many:
                     fmt = "Not enough available nodes found."
@@ -1357,6 +1362,6 @@ if __name__ == "__main__":
         YAML_CONF = resource_filename("molteniron", "conf.yaml")
 
     with open(YAML_CONF, "r") as fobj:
-        conf = yaml.load(fobj)
+        conf = yaml.load(fobj, Loader=yaml.SafeLoader)
 
         listener(conf)

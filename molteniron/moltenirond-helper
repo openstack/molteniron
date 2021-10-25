@@ -77,7 +77,7 @@ def moltenirond_main():
     """This is the main routine for the MoltenIron server."""
 
     with open(YAML_CONF, "r") as fobj:
-        conf = yaml.load(fobj)
+        conf = yaml.load(fobj, Loader=yaml.SafeLoader)
 
         moltenirond.listener(conf)
 

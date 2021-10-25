@@ -93,7 +93,7 @@ if __name__ == "__main__":
         YAML_CONF = resource_filename("molteniron", "conf.yaml")
 
     with open(YAML_CONF, "r") as fobj:
-        conf = yaml.load(fobj)
+        conf = yaml.load(fobj, Loader=yaml.SafeLoader)
 
     request1 = {
         "name": "pkvmci816",
