@@ -1,9 +1,0 @@
-PyMySQL==0.8.0
-PyYAML==3.10
-SQLAlchemy-Utils==0.30.11
-SQLAlchemy==1.2.19
-coverage==4.0
-daemonize==2.5.0
-oslotest==3.2.0
-pbr==2.0.0
-stestr==2.0.0
